@@ -53,7 +53,7 @@ namespace OpenGuard::Utils
 
     struct Timer
     {
-        std::chrono::time_point<std::chrono::steady_clock> start; // Use steady_clock
+        std::chrono::time_point<std::chrono::steady_clock> start;
 
         Timer()
         {
