@@ -19,45 +19,12 @@ MOG2Detector::MOG2Detector(int threshold)
 
 
 bool MOG2Detector::LightFlickCheck(cv::Mat& frame)
-{/*
- * std::deque<double> brightnessHistory;  // Stores the last N brightness values
-const int N = 5;  // Number of frames to track
-const double flickerThreshold = 30.0;  // Base threshold (adjust dynamically)
-    cv::Scalar avg_brightness = cv::mean(frame);
-    double currentBrightness = avg_brightness[0];
-
-    if (brightnessHistory.size() >= N)
-        brightnessHistory.pop_front();  // Remove oldest brightness value
-
-    brightnessHistory.push_back(currentBrightness);
-
-    if (brightnessHistory.size() < N)
-        return false;  // Not enough frames yet
-
-    // ✅ Step 1: Compute Brightness Drop (Oldest vs. Current Frame)
-    double brightnessDrop = brightnessHistory.front() - currentBrightness;  // Compare oldest frame in history
-
-    // ✅ Step 2: Ignore motion-based brightness changes
-    cv::Mat fgMask;
-    mog2->apply(frame, fgMask);
-    int motionPixels = cv::countNonZero(fgMask);
-    double motionPercentage = (double)motionPixels / (fgMask.rows * fgMask.cols) * 100.0;
-
-    std::cout << "Brightness Drop: " << brightnessDrop
-              << " | Motion %: " << motionPercentage << std::endl;
-
-    // ✅ Step 3: Trigger Flicker Detection ONLY if brightness dropped significantly & no major motion
-    if (brightnessDrop > 60 && motionPercentage < 5.0)  // Adjust threshold as needed
-    {
-        std::cout << "⚠️ LIGHT FLICKER DETECTED (Lights turned OFF)" << std::endl;
-        return true;
-    }*/
-
+{
     return false;
 }
 
 
-std::vector<cv::Rect> MOG2Detector::GetMotionBB(const cv::Mat &fgMask)
+std::vector<cv::Rect> MOG2Detector::getMotionBB(const cv::Mat &fgMask)
 {
     std::vector<std::vector<cv::Point>> contours;
     std::vector<cv::Rect> bounding_boxes;
@@ -103,11 +70,16 @@ bool MOG2Detector::Detect(cv::Mat& frame)
 
     if (this->draw_bounding_boxes)
     {
-        std::vector<cv::Rect> motionBoxes = GetMotionBB(fgMask);
+        std::vector<cv::Rect> motionBoxes = getMotionBB(fgMask);
 
         for (const auto& box : motionBoxes)
             cv::rectangle(frame, box, cv::Scalar(0, 255, 0), 2);
     }
 
     return motionPixels > motion_threshold;
+}
+
+void MOG2Detector::setDrawBoundingBoxes(bool draw)
+{
+    this->draw_bounding_boxes = draw;
 }

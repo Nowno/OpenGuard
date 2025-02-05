@@ -15,7 +15,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(OpenGuard main.cpp
         core/capture/capture.cpp
         core/capture/capture.hpp
-        misc/utils.hpp
+        util/utils.hpp
         core/frame_processor/frame_processor.cpp
         core/frame_processor/frame_processor.hpp
         core/detection/motion_detector.hpp
@@ -23,7 +23,10 @@ add_executable(OpenGuard main.cpp
         core/detection/mog2/mog2.hpp
         core/detection/object_detector.hpp
         core/detection/yolo/yolo.cpp
-        core/detection/yolo/yolo.hpp)
+        core/detection/yolo/yolo.hpp
+        util/user_config.hpp
+        core/overlay_renderer/overlay_renderer.cpp
+        core/overlay_renderer/overlay_renderer.hpp)
 
 # Link the OpenCV libraries
 target_link_libraries(OpenGuard ${OpenCV_LIBS})

@@ -2,6 +2,7 @@
 #define OPENGUARD_OBJECT_DETECTOR_HPP
 
 #include <opencv2/opencv.hpp>
+#include "../capture/capture.hpp"
 #include <unordered_set>
 
 class ObjectDetector
@@ -11,7 +12,8 @@ class ObjectDetector
     {
         PERSON,
         PET,
-        OTHER
+        OTHER,
+        NONE
     };
 
     virtual ~ObjectDetector() = default;

@@ -21,12 +21,12 @@ class MOG2Detector : public MotionDetector
     bool LightFlickCheck(cv::Mat& frame);
     void PreprocessFrame(cv::Mat& frame);
 
-    std::vector<cv::Rect> GetMotionBB(const cv::Mat& fgMask);
+    std::vector<cv::Rect> getMotionBB(const cv::Mat& fgMask);
 
     public:
     MOG2Detector(int threshold = 10000);
     bool Detect(cv::Mat& frame) override;
-    bool SetDrawBoundingBoxes(bool draw);
+    void setDrawBoundingBoxes(bool draw);
 
 };
 
