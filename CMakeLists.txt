@@ -26,7 +26,8 @@ add_executable(OpenGuard main.cpp
         core/detection/yolo/yolo.hpp
         util/user_config.hpp
         core/overlay_renderer/overlay_renderer.cpp
-        core/overlay_renderer/overlay_renderer.hpp)
+        core/overlay_renderer/overlay_renderer.hpp
+)
 
 # Link the OpenCV libraries
 target_link_libraries(OpenGuard ${OpenCV_LIBS})

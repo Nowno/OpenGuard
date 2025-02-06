@@ -13,12 +13,11 @@ class Capture
     cv::Mat getFrame();
     cv::VideoCapture getCapture();
 
-    Vec2 getFrameSize();
+    cv::Size getFrameSize();
     int getFrameCount();
     int getFPS();
 
     void setFPS(int fps);
-    void setResolution(Vec2 resolution);
     void Update();
 
 

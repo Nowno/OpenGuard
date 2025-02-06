@@ -1,8 +1,9 @@
 #include "frame_processor.hpp"
 
+//todo: smart ptr
 FrameProcessor::FrameProcessor(Capture& cap) : cap(cap)
 {
-
+    this->overlay_renderer = std::make_shared<OverlayRenderer>();
 }
 
 FrameProcessor::~FrameProcessor()
@@ -10,14 +11,19 @@ FrameProcessor::~FrameProcessor()
 
 }
 
+//todo: more error handling here
 void FrameProcessor::SetMotionDetector(std::unique_ptr<MotionDetector> detector)
 {
     this->motion_detector = std::move(detector);
+    //Dependency injection, we are injecting the overlay renderer into the motion detector
+    this->motion_detector->SetOverlayRenderer(overlay_renderer);
 }
 
 void FrameProcessor::SetObjectDetector(std::unique_ptr<ObjectDetector> detector)
 {
     this->object_detector = std::move(detector);
+    //Same as above
+    this->object_detector->SetOverlayRenderer(overlay_renderer);
 }
 
 void FrameProcessor::ProcessFrame(cv::Mat& frame)
@@ -33,18 +39,20 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
         std::cerr << "Error: Motion detector not set." << std::endl;
         return;
     }
-/*
+
     if (motion_detector->Detect(frame))
     {
-        cv::putText(frame, "Motion Detected", cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255), 2);
+        overlay_renderer->AddElement(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, "Motion Detected", cv::Point(10, 30), cv::Scalar(0, 0, 255), 1));
 
         if (object_detector->Detect(frame) == ObjectDetector::Object::PERSON)
         {
-            cv::putText(frame, "Person Detected", cv::Point(10, 60), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 0), 2);
+            overlay_renderer->AddElement(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, "Person Detected", cv::Point(10, 60), cv::Scalar(0, 255, 0), 1));
         }
+    }
 
-    }*/
-
+    //Todo: In report talk about how I went to optimise the text rendering but then turns out it wasnt the issue but still worth it
+    overlay_renderer->AddElement(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, "FPS: " + std::to_string(cap.getFPS()), cv::Point(10, 50), cv::Scalar(0, 0, 255), 1));
+    overlay_renderer->Render(frame, cap.getFrameSize());
 
     this->processed_frame = frame;
 }
@@ -61,19 +69,9 @@ bool FrameProcessor::RenderFrame()
         return false;
     }
 
-    FrameProcessor::RenderOverlay([&](cv::Mat& overlay)
-    {
-        cv::putText(overlay, "FPS: " + std::to_string(cap.getFPS()), cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255), 2);
-    });
 
     cv::imshow("Frame", processed_frame);
 
     return true;
 }
 
-void FrameProcessor::RenderOverlay(std::function<void(cv::Mat&)> overlay)
-{
-    static cv::Mat draw_overlay = cv::Mat::zeros(cap.getFrameSize().y, cap.getFrameSize().x, CV_8UC3);
-    overlay(draw_overlay);
-    cv::addWeighted(processed_frame, 1.0, draw_overlay, 0.7, 0, processed_frame);
-}

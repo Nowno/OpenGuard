@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <opencv2/imgproc.hpp>
+#include <fstream>
 
 /**
  * Self-Implemented based on:
@@ -88,7 +89,8 @@ cv::Mat YOLODetector::PreProcess(const cv::Mat &frame)
 }
 
 void YOLODetector::DrawBoundingBoxes(cv::Mat &frame, const YOLODetector::DetectionResult &result)
-{
+{        //            overlay_renderer->AddElement(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::RECTANGLE, box, cv::Scalar(0, 255, 0), 2));
+
     // Draw detections on frame
     for (size_t i = 0; i < result.boxes.size(); i++)
     {
@@ -97,8 +99,8 @@ void YOLODetector::DrawBoundingBoxes(cv::Mat &frame, const YOLODetector::Detecti
         float confidence = result.confidences[i];
 
         std::string label = class_names[class_id] + " " + std::to_string(confidence);
-        cv::rectangle(frame, box, cv::Scalar(0, 255, 0), 2);
-        cv::putText(frame, label, cv::Point(box.x, box.y - 10), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 2);
+        overlay_renderer->AddElement(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::RECTANGLE, box, cv::Scalar(0, 255, 0), 2));
+        overlay_renderer->AddElement(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, label, cv::Point(box.x, box.y - 10), cv::Scalar(0, 255, 0), 2));
     }
 }
 

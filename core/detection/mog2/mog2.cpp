@@ -73,7 +73,8 @@ bool MOG2Detector::Detect(cv::Mat& frame)
         std::vector<cv::Rect> motionBoxes = getMotionBB(fgMask);
 
         for (const auto& box : motionBoxes)
-            cv::rectangle(frame, box, cv::Scalar(0, 255, 0), 2);
+            /*cv::rectangle(frame, box, cv::Scalar(0, 255, 0), 2);*/
+            overlay_renderer->AddElement(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::RECTANGLE, box, cv::Scalar(0, 255, 0), 2));
     }
 
     return motionPixels > motion_threshold;

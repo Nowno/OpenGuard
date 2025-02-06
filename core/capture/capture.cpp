@@ -49,31 +49,31 @@ int Capture::getFPS()
     return fps;
 }
 
-Vec2 Capture::getFrameSize()
+cv::Size Capture::getFrameSize()
 {
     //Only need to get this once since it won't change
     static int width = cap.get(cv::CAP_PROP_FRAME_WIDTH);
     static int height = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
 
-    static Vec2 size(width, height);
+    static cv::Size size(width, height);
 
     return size;
 }
 
 void Capture::Update()
 {
-    this->frame_count++; // Tracks total frames
+    this->frame_count++;
 
-    static int frame_counter = 0; // Static local counter for FPS
+    static int frame_counter = 0;
     frame_counter++;
 
     static OpenGuard::Utils::Timer timer; // Static timer to track elapsed time
 
     if (timer.HasElapsed(1.0))
     {
-        this->fps = frame_counter; // Store calculated FPS
-        frame_counter = 0;         // Reset counter for next second
-        timer.Reset();             // Restart the timer
+        this->fps = frame_counter;
+        frame_counter = 0;
+        timer.Reset();
         printf("FPS: %d\n", fps);
     }
 }

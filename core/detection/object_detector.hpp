@@ -2,8 +2,8 @@
 #define OPENGUARD_OBJECT_DETECTOR_HPP
 
 #include <opencv2/opencv.hpp>
-#include "../capture/capture.hpp"
 #include <unordered_set>
+#include "../overlay_renderer/overlay_renderer.hpp"
 
 class ObjectDetector
 {
@@ -30,10 +30,15 @@ class ObjectDetector
     {
         return alert_objects.find(detectedObject) != alert_objects.end();
     }
+    void SetOverlayRenderer(std::shared_ptr<OverlayRenderer> renderer)
+    {
+        this->overlay_renderer = renderer;
+    }
 
     protected:
     //Initially used vector but this is more efficient for lookups
     std::unordered_set<Object> alert_objects;
+    std::shared_ptr<OverlayRenderer> overlay_renderer;
 };
 
 #endif // OPENGUARD_OBJECT_DETECTOR_HPP

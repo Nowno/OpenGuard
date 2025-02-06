@@ -19,7 +19,6 @@ class YOLODetector : public ObjectDetector
         std::vector<float> confidences; /// Confidence for each detected object.
     };
 
-
     public:
     YOLODetector();
     ~YOLODetector() override = default;
