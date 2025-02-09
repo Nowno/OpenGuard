@@ -1,5 +1,6 @@
 #include "yolo.hpp"
-#include "../../../util/user_config.hpp"
+#include "../../../util/configs/user_config.hpp"
+#include "../../../util/utils.hpp"
 #include <stdexcept>
 #include <iostream>
 #include <opencv2/imgproc.hpp>
@@ -17,22 +18,22 @@
 YOLODetector::YOLODetector()
 {
     // Load YOLOv5 model
-    net = cv::dnn::readNetFromONNX(user_config["model_path"]);
+    net = cv::dnn::readNetFromONNX(OpenGuard::user_config["model_path"]);
     if (net.empty())
     {
         throw std::runtime_error("Could not load YOLOv5 model.");
     }
 
     // Load class names
-    LoadClassNames(user_config["classes_path"]);
+    LoadClassNames(OpenGuard::user_config["classes_path"]);
 
     // Read detection thresholds
-    confidence_threshold = std::stof(user_config["confidence_threshold"]);
-    score_threshold = std::stof(user_config["score_threshold"]);
-    nms_threshold = std::stof(user_config["nms_threshold"]);
+    confidence_threshold = std::stof(OpenGuard::user_config["confidence_threshold"]);
+    score_threshold = std::stof(OpenGuard::user_config["score_threshold"]);
+    nms_threshold = std::stof(OpenGuard::user_config["nms_threshold"]);
 
     // Set preferable backend & target (CPU or CUDA if available)
-    setHardwareAcceleration(static_cast<bool>(std::stoi(user_config["use_gpu"])));
+    setHardwareAcceleration(OpenGuard::Utils::StringToBool(OpenGuard::user_config["use_gpu"]));
 }
 
 /**

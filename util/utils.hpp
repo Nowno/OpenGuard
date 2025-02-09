@@ -5,6 +5,8 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <ctime>
+
 namespace OpenGuard::Utils
 {
     //Open file and return contents
@@ -41,6 +43,32 @@ namespace OpenGuard::Utils
 
         return content;
     }
+
+    inline bool StringToBool(std::string str)
+    {
+        for (auto& c : str)
+            c = std::tolower(c);
+
+        return str == "true";
+    }
+
+inline std::string DateTimeString()
+{
+    struct tm time_info;
+    time_t now = time(nullptr);
+
+    // Cross-platform localtime_s / localtime_r
+    #ifdef _WIN32
+        localtime_s(&time_info, &now);
+    #else
+        localtime_r(&now, &timeinfo);
+    #endif
+
+    char buffer[80];
+    strftime(buffer, 80, "%Y-%m-%d %H-%M-%S", &time_info);
+
+    return std::string(buffer);
+}
 
     struct Vec2
     {

@@ -10,7 +10,7 @@ class MotionDetector
     virtual ~MotionDetector() = default;
     virtual bool Detect(cv::Mat& frame) = 0;
 
-    void SetOverlayRenderer(std::shared_ptr<OverlayRenderer> renderer)
+    void setOverlayRenderer(std::shared_ptr<OverlayRenderer> renderer)
     {
         this->overlay_renderer = renderer;
     }

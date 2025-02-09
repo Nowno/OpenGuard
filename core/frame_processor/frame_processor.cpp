@@ -1,9 +1,10 @@
 #include "frame_processor.hpp"
-
+#include "../../util/configs/user_config.hpp"
 //todo: smart ptr
 FrameProcessor::FrameProcessor(Capture& cap) : cap(cap)
 {
     this->overlay_renderer = std::make_shared<OverlayRenderer>();
+    this->recorder = std::make_unique<Recorder>(cap.getFrameSize(), 15);
 }
 
 FrameProcessor::~FrameProcessor()
@@ -16,14 +17,14 @@ void FrameProcessor::SetMotionDetector(std::unique_ptr<MotionDetector> detector)
 {
     this->motion_detector = std::move(detector);
     //Dependency injection, we are injecting the overlay renderer into the motion detector
-    this->motion_detector->SetOverlayRenderer(overlay_renderer);
+    this->motion_detector->setOverlayRenderer(overlay_renderer);
 }
 
 void FrameProcessor::SetObjectDetector(std::unique_ptr<ObjectDetector> detector)
 {
     this->object_detector = std::move(detector);
     //Same as above
-    this->object_detector->SetOverlayRenderer(overlay_renderer);
+    this->object_detector->setOverlayRenderer(overlay_renderer);
 }
 
 void FrameProcessor::ProcessFrame(cv::Mat& frame)
@@ -39,16 +40,23 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
         std::cerr << "Error: Motion detector not set." << std::endl;
         return;
     }
-
-    if (motion_detector->Detect(frame))
+    bool recording = motion_detector->Detect(frame);
+//debug for report, but it was blurrier because of the blurring
+    if (recording)
     {
         overlay_renderer->AddElement(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, "Motion Detected", cv::Point(10, 30), cv::Scalar(0, 0, 255), 1));
 
-        if (object_detector->Detect(frame) == ObjectDetector::Object::PERSON)
+  /*      if (object_detector->Detect(frame) == ObjectDetector::Object::PERSON)
         {
             overlay_renderer->AddElement(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, "Person Detected", cv::Point(10, 60), cv::Scalar(0, 255, 0), 1));
-        }
+
+        }*/
+
     }
+    recorder->AddFrame(frame, recording);
+
+
+
 
     //Todo: In report talk about how I went to optimise the text rendering but then turns out it wasnt the issue but still worth it
     overlay_renderer->AddElement(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, "FPS: " + std::to_string(cap.getFPS()), cv::Point(10, 50), cv::Scalar(0, 0, 255), 1));

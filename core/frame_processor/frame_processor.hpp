@@ -4,7 +4,7 @@
 #include "../capture/capture.hpp"
 #include "../detection/motion_detector.hpp"
 #include "../detection/object_detector.hpp"
-
+#include "../recorder/recorder.hpp"
 class FrameProcessor
 {
     public:
@@ -26,6 +26,7 @@ class FrameProcessor
 
     cv::Mat processed_frame;
     Capture& cap;
+    std::unique_ptr<Recorder> recorder;
 
     bool draw_fps = false;
     bool draw_overlay = false;

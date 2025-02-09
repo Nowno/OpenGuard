@@ -17,7 +17,7 @@ MOG2Detector::MOG2Detector(int threshold)
 }
 
 
-
+//Deprecated by yolov5
 bool MOG2Detector::LightFlickCheck(cv::Mat& frame)
 {
     return false;
@@ -50,21 +50,20 @@ void MOG2Detector::PreprocessFrame(cv::Mat& frame)
 
 bool MOG2Detector::Detect(cv::Mat& frame)
 {
+    cv::Mat fgMask;
+    mog2->apply(frame, fgMask);
+
     if (!initialized)
     {
         if (--initialization_frames == 0)
             initialized = true;
 
+        //Todo print
+
         return false;
     }
 
-    PreprocessFrame(frame);
-
-    if (LightFlickCheck(frame))
-        return false;
-
-    cv::Mat fgMask;
-    mog2->apply(frame, fgMask);
+    PreprocessFrame(fgMask);
 
     int motionPixels = cv::countNonZero(fgMask);
 
@@ -73,7 +72,6 @@ bool MOG2Detector::Detect(cv::Mat& frame)
         std::vector<cv::Rect> motionBoxes = getMotionBB(fgMask);
 
         for (const auto& box : motionBoxes)
-            /*cv::rectangle(frame, box, cv::Scalar(0, 255, 0), 2);*/
             overlay_renderer->AddElement(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::RECTANGLE, box, cv::Scalar(0, 255, 0), 2));
     }
 

@@ -5,7 +5,7 @@ project(OpenGuard)
 set(OpenCV_DIR "C:/Users/Nono/Desktop/Stuff/Coding/Libs/OpenCv/opencv_last/opencv/build")
 
 # Find OpenCV package
-find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED COMPONENTS)
 
 # Set the C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -24,10 +24,18 @@ add_executable(OpenGuard main.cpp
         core/detection/object_detector.hpp
         core/detection/yolo/yolo.cpp
         core/detection/yolo/yolo.hpp
-        util/user_config.hpp
+        util/configs/user_config.hpp
         core/overlay_renderer/overlay_renderer.cpp
         core/overlay_renderer/overlay_renderer.hpp
+        core/recorder/recorder.cpp
+        core/recorder/recorder.hpp
+        util/logger/logger.cpp
+        util/logger/logger.hpp
+        util/configs/user_config.cpp
+        core/hook_manager/hook_manager.cpp
+        core/hook_manager/hook_manager.hpp
 )
+
 
 # Link the OpenCV libraries
 target_link_libraries(OpenGuard ${OpenCV_LIBS})

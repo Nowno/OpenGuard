@@ -30,7 +30,7 @@ class ObjectDetector
     {
         return alert_objects.find(detectedObject) != alert_objects.end();
     }
-    void SetOverlayRenderer(std::shared_ptr<OverlayRenderer> renderer)
+    void setOverlayRenderer(std::shared_ptr<OverlayRenderer> renderer)
     {
         this->overlay_renderer = renderer;
     }
