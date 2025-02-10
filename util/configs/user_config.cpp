@@ -22,5 +22,6 @@ namespace OpenGuard
                     {"use_gpu", "true"},
                     {"pre_record_length", "2"},
                     {"post_record_length", "2"}
+                    {"python_prefix", "py"}
             };
 }

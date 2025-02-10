@@ -8,7 +8,7 @@ set(OpenCV_DIR "C:/Users/Nono/Desktop/Stuff/Coding/Libs/OpenCv/opencv_last/openc
 find_package(OpenCV REQUIRED COMPONENTS)
 
 # Set the C++ standard
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Add the executable

@@ -12,24 +12,14 @@ class ObjectDetector
     {
         PERSON,
         PET,
+        CAR,
         OTHER,
         NONE
     };
 
     virtual ~ObjectDetector() = default;
-
     virtual Object Detect(const cv::Mat& frame) = 0;
 
-    void SetAlertObjects(const std::vector<Object>& objects)
-    {
-        alert_objects.clear();
-        alert_objects.insert(objects.begin(), objects.end());
-    }
-
-    bool ShouldAlert(Object detectedObject) const
-    {
-        return alert_objects.find(detectedObject) != alert_objects.end();
-    }
     void setOverlayRenderer(std::shared_ptr<OverlayRenderer> renderer)
     {
         this->overlay_renderer = renderer;
