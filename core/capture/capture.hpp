@@ -10,12 +10,12 @@ class Capture
     Capture(int width, int height, int fps, int device = 0);
     ~Capture();
 
-    cv::Mat getFrame();
-    cv::VideoCapture getCapture();
+    cv::Mat GetFrame();
+    cv::VideoCapture GetCapture();
 
-    cv::Size getFrameSize();
-    int getFrameCount();
-    int getFPS();
+    cv::Size GetFrameSize();
+    int GetFrameCount();
+    int GetFPS();
 
     void setFPS(int fps);
     void Update();

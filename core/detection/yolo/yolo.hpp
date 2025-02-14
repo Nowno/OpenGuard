@@ -74,6 +74,11 @@ class YOLODetector : public ObjectDetector
      */
     DetectionResult PostProcess(const cv::Mat& frame, const std::vector<cv::Mat>& outputs);
 
+    /**
+     * @brief Draw bounding boxes on the frame.
+     * @param frame The input image.
+     * @param result The detection result.
+     */
     void DrawBoundingBoxes(cv::Mat& frame, const DetectionResult& result);
 
 };

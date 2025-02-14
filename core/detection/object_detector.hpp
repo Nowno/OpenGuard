@@ -10,11 +10,11 @@ class ObjectDetector
     public:
     enum class Object
     {
+        NONE,
         PERSON,
         PET,
         CAR,
-        OTHER,
-        NONE
+        OTHER
     };
 
     virtual ~ObjectDetector() = default;
@@ -25,10 +25,31 @@ class ObjectDetector
         this->overlay_renderer = renderer;
     }
 
+    std::string GetObjectString(Object object)
+    {
+        switch (object)
+        {
+            case Object::PERSON: return "Person";
+            case Object::PET:    return "Pet";
+            case Object::CAR:    return "Car";
+            case Object::OTHER:  // Default (falthrough)
+            default:             return "N/A";
+        }
+    }
+
+    uint8_t GetDetectionCount() const
+    {
+        return detection_count;
+    }
+
+    void ResetDetectionCount()
+    {
+        detection_count = 0;
+    }
+
     protected:
-    //Initially used vector but this is more efficient for lookups
-    std::unordered_set<Object> alert_objects;
     std::shared_ptr<OverlayRenderer> overlay_renderer;
+    uint8_t detection_count = 0;
 };
 
 #endif // OPENGUARD_OBJECT_DETECTOR_HPP

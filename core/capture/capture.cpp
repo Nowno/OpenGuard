@@ -22,7 +22,7 @@ Capture::~Capture()
 
 //https://stackoverflow.com/questions/30216812/opencv-is-cvmat-like-a-shared-ptr
 //Apparently cv::Mat behaves like a shared_ptr so we don't need to worry about ownership etc.
-cv::Mat Capture::getFrame()
+cv::Mat Capture::GetFrame()
 {
     if (!cap.read(frame))
     {
@@ -34,22 +34,22 @@ cv::Mat Capture::getFrame()
     return frame;
 }
 
-cv::VideoCapture Capture::getCapture()
+cv::VideoCapture Capture::GetCapture()
 {
     return cap;
 }
 
-int Capture::getFrameCount()
+int Capture::GetFrameCount()
 {
     return frame_count;
 }
 
-int Capture::getFPS()
+int Capture::GetFPS()
 {
     return fps;
 }
 
-cv::Size Capture::getFrameSize()
+cv::Size Capture::GetFrameSize()
 {
     //Only need to get this once since it won't change
     static int width = cap.get(cv::CAP_PROP_FRAME_WIDTH);

@@ -12,28 +12,29 @@
  *
  */
 
+//todo: experiment with yolov5n instead of yolov5s
+
 /**
  * @brief Constructor: Initializes YOLOv5 detector.
  */
 YOLODetector::YOLODetector()
 {
     // Load YOLOv5 model
-    net = cv::dnn::readNetFromONNX(OpenGuard::user_config["model_path"]);
+    net = cv::dnn::readNetFromONNX(ConfigManager::GetInstance().GetConfig<std::string>("model_path"));
     if (net.empty())
     {
         throw std::runtime_error("Could not load YOLOv5 model.");
     }
 
     // Load class names
-    LoadClassNames(OpenGuard::user_config["classes_path"]);
+    LoadClassNames(ConfigManager::GetInstance().GetConfig<std::string>("classes_path"));
 
     // Read detection thresholds
-    confidence_threshold = std::stof(OpenGuard::user_config["confidence_threshold"]);
-    score_threshold = std::stof(OpenGuard::user_config["score_threshold"]);
-    nms_threshold = std::stof(OpenGuard::user_config["nms_threshold"]);
-
+    confidence_threshold = std::stof(ConfigManager::GetInstance().GetConfig<std::string>("confidence_threshold"));
+    score_threshold = std::stof(ConfigManager::GetInstance().GetConfig<std::string>("score_threshold"));
+    nms_threshold = std::stof(ConfigManager::GetInstance().GetConfig<std::string>("nms_threshold"));
     // Set preferable backend & target (CPU or CUDA if available)
-    setHardwareAcceleration(OpenGuard::Utils::StringToBool(OpenGuard::user_config["use_gpu"]));
+    setHardwareAcceleration(ConfigManager::GetInstance().GetConfig<bool>("use_gpu"));
 }
 
 /**
@@ -233,12 +234,18 @@ ObjectDetector::Object YOLODetector::Detect(const cv::Mat &frame)
     if (result.class_ids.size() > 0)
         detected_object = class_names[result.class_ids[0]];
 
+    this->detection_count++;
 
     if (detected_object == "person")
         return Object::PERSON;
     else if (detected_object == "dog" || detected_object == "cat")
         return Object::PET;
+    else if (detected_object == "car" || detected_object == "truck")
+        return Object::CAR;
+    else if (result.class_ids.size() > 0)
+        return Object::OTHER;
 
+    this->detection_count = std::max(0, this->detection_count - 1);
 
-    return Object::OTHER;
+    return Object::NONE;
 }

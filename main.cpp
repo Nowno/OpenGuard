@@ -2,12 +2,11 @@
 #include "core/detection/mog2/mog2.hpp"
 #include "core/detection/yolo/yolo.hpp"
 #include "core/hook_manager/hook_manager.hpp"
+#include "util/logger/logger.hpp"
 
 int main()
 {
     Capture cap(640, 480, 30);
-
-    //cv::cvtColor(cap.getFrame(), cap.getFrame(), cv::COLOR_BGR2RGB);
 
     //Set up detectors
     auto motion_detector = std::make_unique<MOG2Detector>(10000); //todo: maybe take this from user config
@@ -27,10 +26,18 @@ int main()
     hook_manager.RegisterHooks("hooks/on_start");
     hook_manager.RegisterHooks("hooks/on_motion");
     hook_manager.RegisterHooks("hooks/on_object");
+    hook_manager.RegisterHooks("hooks/on_record_stop");
     hook_manager.RegisterHooks("hooks/on_video_save");
+
+    // 2 - Register individual hooks
+    hook_manager.RegisterHook("on_hook", HookManager::Hook(HookManager::HookType::NATIVE, [](const std::unordered_map<std::string, std::string>& args) -> int {
+        Logger::GetInstance().Log("INFO", args.at("hook_name") + " hook called.");
+        return 0;
+    }, false));
+
     while (true)
     {
-        auto frame = cap.getFrame();
+        auto frame = cap.GetFrame();
 
         fp.ProcessFrame(frame);
 

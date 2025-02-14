@@ -8,9 +8,9 @@
 //todo: comments
 Recorder::Recorder(cv::Size frame_size, int fps) : frame_size(frame_size), fps(fps), recording(false)
 {
-    outdir = OpenGuard::user_config["output_path"];
-    pre_record_buffer_size = fps * std::stoi(OpenGuard::user_config["pre_record_length"]);
-    post_record_buffer_size = fps * std::stoi(OpenGuard::user_config["post_record_length"]);
+    outdir = ConfigManager::GetInstance().GetConfig<std::string>("output_path");
+    pre_record_buffer_size = fps * ConfigManager::GetInstance().GetConfig<int>("pre_record_length");
+    post_record_buffer_size = fps * ConfigManager::GetInstance().GetConfig<int>("post_record_length");
 
     frame_buffer = std::deque<cv::Mat>();
 
@@ -102,8 +102,7 @@ void Recorder::ConvertToMP4(const std::string& file)
 
     std::string out_file = file.substr(0, file.find_last_of('.')) + ".mp4";
     std::stringstream command;
-    command << OpenGuard::user_config["ffmpeg_path"] << " -i \"" << file << "\" -vcodec libx264 -crf 23 \"" << out_file << "\" -loglevel error -y >nul 2>&1";
-
+    command << ConfigManager::GetInstance().GetConfig<std::string>("ffmpeg_path") << " -i \"" << file << "\" -vcodec libx264 -crf 23 \"" << out_file << "\" -loglevel error -y >nul 2>&1";
     int ret = std::system(command.str().c_str());  // Executes FFmpeg
 
     if (ret == 0)

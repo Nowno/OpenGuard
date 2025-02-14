@@ -2,26 +2,51 @@
 // Created by Nono on 07/02/2025.
 //
 #include "user_config.hpp"
+#include <filesystem>
+#include <iostream>
+#include <fstream>
 
-
-namespace OpenGuard
+ConfigManager::ConfigManager()
 {
-    std::unordered_map<std::string, std::string> user_config =
-            {
-                    {"model_path", "C:\\Users\\Nono\\Desktop\\Stuff\\School\\FP - Surveilance\\OpenGuard\\core\\detection\\yolo\\models\\yolov5s.onnx"},
-                    {"classes_path", "C:\\Users\\Nono\\Desktop\\Stuff\\School\\FP - Surveilance\\OpenGuard\\core\\detection\\yolo\\models\\coco.names"},
-                    {"output_path", "C:\\Users\\Nono\\Desktop\\Stuff\\School\\FP - Surveilance\\OpenGuard\\output"},
-                    {"ffmpeg_path", "C:\\Users\\Nono\\Desktop\\Stuff\\Coding\\Libs\\ffmpeg-master-latest-win64-gpl\\bin\\ffmpeg.exe"},
-                    {"frame_width", "640"},
-                    {"frame_height", "480"},
-                    {"frame_rate", "15"},
-                    {"motion_threshold", "0.1"},
-                    {"confidence_threshold", "0.4"},
-                    {"score_threshold", "0.2"},
-                    {"nms_threshold", "0.4"},
-                    {"use_gpu", "true"},
-                    {"pre_record_length", "2"},
-                    {"post_record_length", "2"}
-                    {"python_prefix", "py"}
-            };
+    //todo maybe refactor a bit here
+    LoadConfig();
+}
+
+void ConfigManager::ResetConfig()
+{
+    std::string config_path = "./config/config.json";
+    std::filesystem::create_directories("./config");
+    std::ofstream config_file(config_path);
+
+    config_file << this->preset_config;
+    config_file.close();
+}
+
+void ConfigManager::LoadConfig()
+{
+    std::string config_path = "./config/config.json";
+
+    if (!std::filesystem::exists(config_path))
+    {
+        ResetConfig();
+        return;
+    }
+
+    std::ifstream config_file(config_path);
+    try
+    {
+        config_file >> this->config;
+    }
+    catch (nlohmann::json::exception& e)
+    {
+        ResetConfig();
+        this->config = nlohmann::json::parse(this->preset_config);
+    }
+}
+
+
+ConfigManager& ConfigManager::GetInstance()
+{
+    static ConfigManager instance;
+    return instance;
 }
