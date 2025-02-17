@@ -7,6 +7,8 @@
 #include <thread>
 #include <mutex>
 
+#include "../detection/object_detector.hpp"
+
 class Recorder
 {
     public:
@@ -15,7 +17,7 @@ class Recorder
 
     void Start();
     void Stop();
-    void AddFrame(const cv::Mat& frame, bool motion_detected);
+    void AddFrame(const cv::Mat& frame, bool motion_detected, ObjectDetector::Object object_detected);
 
     private:
     cv::Size frame_size;
@@ -26,13 +28,17 @@ class Recorder
 
     cv::VideoWriter video_writer;
     std::deque<cv::Mat> frame_buffer;
-    bool recording;
+
     std::atomic<bool> converting{false};
     std::thread conversion_thread;
+
+    bool recording;
 
     int post_record_frames;
     int post_record_buffer_size;
     int pre_record_buffer_size;
+
+    ObjectDetector::Object flagged_object;
 
     void ConvertToMP4(const std::string& filename);
 

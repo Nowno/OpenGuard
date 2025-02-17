@@ -10,7 +10,11 @@ class Logger
     public:
 
     void Log(const std::string& type, const std::string& message);
-    static Logger& GetInstance();
+    static Logger& GetInstance()
+    {
+        static Logger instance;
+        return instance;
+    }
 
     private:
     std::ofstream log_file;

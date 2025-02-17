@@ -35,7 +35,7 @@ class HookManager
 
     void RegisterHooks(const std::string& hook_path);
     void RegisterHook(const std::string& hook_name, const Hook& hook);
-    void ExecuteHooks(const std::string& hook_name, std::unordered_map<std::string, std::string>& args);
+    void ExecuteHooks(const std::string& hook_name, std::unordered_map<std::string, std::string> args);
 
     private:
     std::unordered_map<std::string, std::vector<Hook>> hooks;

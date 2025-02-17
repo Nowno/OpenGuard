@@ -49,7 +49,10 @@ class ConfigManager
         "use_gpu": "true",
         "pre_record_length": "2",
         "post_record_length": "2",
-        "python_prefix": "python"
+        "python_prefix": "python",
+        "log_path": "default",
+        "record_trigger_objects": ["person", "car", "pet"],
+        "object_detection_frequency": "3",
     })";
 };
 

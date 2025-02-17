@@ -1,4 +1,5 @@
 #include "capture.hpp"
+#include "../openguard.hpp"
 
 Capture::Capture(int width, int height, int fps, int device)
 {
@@ -64,18 +65,14 @@ void Capture::Update()
 {
     this->frame_count++;
 
-    static int frame_counter = 0;
-    frame_counter++;
-
     static OpenGuard::Utils::Timer timer; // Static timer to track elapsed time
 
-    if (timer.HasElapsed(1.0))
+    if (timer.HasElapsed(1.0))  // If one second has passed
     {
-        this->fps = frame_counter;
-        frame_counter = 0;
+        this->fps = frame_count;  // Save the frame count as FPS
+        frame_count = 0;  // Reset frame counter for the next second
         timer.Reset();
-        printf("FPS: %d\n", fps);
+        printf("FPS: %d\n", this->fps);
     }
 }
-
 

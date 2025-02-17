@@ -52,7 +52,7 @@ namespace OpenGuard::Utils
         return str == "true";
     }
 
-inline std::string DateTimeString()
+inline std::string DateTimeString(bool file_safe = true)
 {
     struct tm time_info;
     time_t now = time(nullptr);
@@ -65,7 +65,11 @@ inline std::string DateTimeString()
     #endif
 
     char buffer[80];
-    strftime(buffer, 80, "%Y-%m-%d %H-%M-%S", &time_info);
+
+    if (file_safe)
+        strftime(buffer, 80, "%Y-%m-%d %H-%M-%S", &time_info);
+    else
+        strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", &time_info);
 
     return std::string(buffer);
 }

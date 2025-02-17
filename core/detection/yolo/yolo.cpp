@@ -1,6 +1,6 @@
 #include "yolo.hpp"
-#include "../../../util/configs/user_config.hpp"
-#include "../../../util/utils.hpp"
+#include "../../openguard.hpp"
+
 #include <stdexcept>
 #include <iostream>
 #include <opencv2/imgproc.hpp>
@@ -13,6 +13,7 @@
  */
 
 //todo: experiment with yolov5n instead of yolov5s
+//todo: yoloV8 +focus only few classes when exporting model
 
 /**
  * @brief Constructor: Initializes YOLOv5 detector.
@@ -91,7 +92,7 @@ cv::Mat YOLODetector::PreProcess(const cv::Mat &frame)
 }
 
 void YOLODetector::DrawBoundingBoxes(cv::Mat &frame, const YOLODetector::DetectionResult &result)
-{        //            overlay_renderer->AddElement(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::RECTANGLE, box, cv::Scalar(0, 255, 0), 2));
+{        //            overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::RECTANGLE, box, cv::Scalar(0, 255, 0), 2));
 
     // Draw detections on frame
     for (size_t i = 0; i < result.boxes.size(); i++)
@@ -101,8 +102,8 @@ void YOLODetector::DrawBoundingBoxes(cv::Mat &frame, const YOLODetector::Detecti
         float confidence = result.confidences[i];
 
         std::string label = class_names[class_id] + " " + std::to_string(confidence);
-        overlay_renderer->AddElement(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::RECTANGLE, box, cv::Scalar(0, 255, 0), 2));
-        overlay_renderer->AddElement(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, label, cv::Point(box.x, box.y - 10), cv::Scalar(0, 255, 0), 2));
+        overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::RECTANGLE, box, cv::Scalar(0, 255, 0), 2, true));
+        overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, label, cv::Point(box.x,box.y - 10), cv::Scalar(0, 255, 0), 2, true));
     }
 }
 
@@ -118,10 +119,9 @@ YOLODetector::DetectionResult YOLODetector::PostProcess(const cv::Mat& frame, co
     float x_factor = static_cast<float>(frame.cols) / 640;
     float y_factor = static_cast<float>(frame.rows) / 640;
 
-    //todo: better logigng system
     if (outputs.empty())
     {
-        std::cerr << "No outputs received from YOLO" << std::endl;
+
         return {};
     }
 
@@ -197,10 +197,24 @@ YOLODetector::DetectionResult YOLODetector::PostProcess(const cv::Mat& frame, co
 }
 
 /**
+ * @brief Resets the state of the detector.
+ */
+void YOLODetector::ResetState()
+{
+    call_count = 0;
+    last_detection = Object::NONE;
+}
+
+/**
  * @brief Runs YOLO detection on a given frame.
  */
 ObjectDetector::Object YOLODetector::Detect(const cv::Mat &frame)
 {
+    static int call_freq = ConfigManager::GetInstance().GetConfig<int>("object_detection_frequency");
+
+    if (call_count++ % call_freq != 0)
+        return last_detection;
+
     // Preprocess the frame
     cv::Mat resized = PreProcess(frame);
     cv::Mat blob = cv::dnn::blobFromImage(resized, 1 / 255.0, cv::Size(640, 640), cv::Scalar(), true, false);
@@ -225,16 +239,19 @@ ObjectDetector::Object YOLODetector::Detect(const cv::Mat &frame)
 
     DetectionResult result = PostProcess(frame, outputs);
 
-
+    //todo: only look for person, dog, cat, car, truck
     if (this->draw_bounding_boxes)
-        DrawBoundingBoxes(const_cast<cv::Mat&>(frame), result);
+    {
+        overlay_renderer->InvalidatePersistent();
+        DrawBoundingBoxes(const_cast<cv::Mat &>(frame), result);
+    }
 
     std::string detected_object;
 
     if (result.class_ids.size() > 0)
         detected_object = class_names[result.class_ids[0]];
 
-    this->detection_count++;
+    //this->detection_count++;
 
     if (detected_object == "person")
         return Object::PERSON;
@@ -242,10 +259,7 @@ ObjectDetector::Object YOLODetector::Detect(const cv::Mat &frame)
         return Object::PET;
     else if (detected_object == "car" || detected_object == "truck")
         return Object::CAR;
-    else if (result.class_ids.size() > 0)
-        return Object::OTHER;
-
-    this->detection_count = std::max(0, this->detection_count - 1);
-
-    return Object::NONE;
+    else
+        return Object::NONE;
+    //todo: implement detection count
 }

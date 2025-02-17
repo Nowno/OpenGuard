@@ -15,8 +15,14 @@ class MotionDetector
         this->overlay_renderer = renderer;
     }
 
+    bool GetPreviousState()
+    {
+        return prev_state;
+    }
+
     protected:
     std::shared_ptr<OverlayRenderer> overlay_renderer;
+    bool prev_state = false;
 };
 
 

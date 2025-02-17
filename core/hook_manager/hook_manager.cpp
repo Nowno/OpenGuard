@@ -4,7 +4,8 @@
 #include <fstream>
 
 #include "hook_manager.hpp"
-#include "../../util/libs/json.hpp"
+#include "../openguard.hpp"
+#include "../../utils/libs/json.hpp"
 
 using json = nlohmann::json;
 
@@ -12,7 +13,9 @@ void HookManager::RegisterHooks(const std::string& hook_path)
 {
     if (!std::filesystem::exists(hook_path))
     {
-        std::cerr << "⚠️ Hook path does not exist: " << hook_path << std::endl;
+        std::cerr << "Hook path does not exist, creating it." << std::endl;
+        std::filesystem::create_directories(hook_path);
+
         return;
     }
 
@@ -28,6 +31,7 @@ void HookManager::RegisterHooks(const std::string& hook_path)
             RegisterHook(event_name, Hook(HookType::EXTERNAL, script_path, IsBlocking(script_path)));
         }
     }
+    //todo: sort by name
 }
 
 void HookManager::RegisterHook(const std::string& event, const Hook& hook)
@@ -36,19 +40,29 @@ void HookManager::RegisterHook(const std::string& event, const Hook& hook)
     hooks[event].push_back(hook);
 }
 
-void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std::string, std::string>& args)
+void HookManager::ExecuteHooks(const std::string& hook_name, std::unordered_map<std::string, std::string> args)
 {
-    if (hooks.find(event) == hooks.end())
+    if (hooks.find(hook_name) == hooks.end())
         return;
 
-    args["event"] = event;
+    // Inject event name into args
+    args["event"] = hook_name;
 
-    for (const Hook &hook: hooks[event])
+    // Edge case for on_hook event
+    for (const Hook& on_hook : hooks["on_hook"])
+    {
+        if (on_hook.blocking)
+            on_hook.callback(args);
+        else
+            std::thread(on_hook.callback, args).detach();
+    }
+
+    for (const Hook &hook: hooks[hook_name])
     {
         if (hook.type == HookType::NATIVE)
         {
             if (hook.blocking)
-                this->hook_outputs[event] = hook.callback(args);
+                this->hook_outputs[hook_name] = hook.callback(args);
             else
                 std::thread(hook.callback, args).detach();
         }
@@ -56,13 +70,13 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
         {
             json data = args;
             std::string json_args = data.dump();
-            std::string command = "py \"" + hook.script_path + "\" \"" + json_args + "\"";
+            std::string command = ConfigManager::GetInstance().GetConfig<std::string>("python_prefix") + " \"" + hook.script_path + "\" \"" + json_args + "\"";
 
             if (hook.blocking)
             {
                 int result = std::system(command.c_str());
                 std::lock_guard<std::mutex> lock(hook_mutex);
-                this->hook_outputs[event] = result;
+                this->hook_outputs[hook_name] = result;
             }
             else
             {

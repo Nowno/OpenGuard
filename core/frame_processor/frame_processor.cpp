@@ -1,5 +1,7 @@
 #include "frame_processor.hpp"
-#include "../../util/configs/user_config.hpp"
+#include "../../utils/configs/user_config.hpp"
+#include "../../utils/logger/logger.hpp"
+#include "../hook_manager/hook_manager.hpp"
 //todo: smart ptr
 FrameProcessor::FrameProcessor(Capture& cap) : cap(cap)
 {
@@ -31,43 +33,55 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
 {
     if (!frame.data)
     {
-        std::cerr << "Error: Unable to read frame." << std::endl;
+        Logger::GetInstance().Log("ERROR", "Unable to read frame (ProcessFrame).");
         return;
     }
 
-    if (!motion_detector)
+    if (!motion_detector || !object_detector)
     {
-        std::cerr << "Error: Motion detector not set." << std::endl;
+        Logger::GetInstance().Log("ERROR", "Detectors not set (ProcessFrame).");
         return;
     }
 
     bool motion_detected = motion_detector->Detect(frame);
 
+    static OpenGuard::Utils::Timer timer;
+    static ObjectDetector::Object object_detected = ObjectDetector::Object::NONE;
+    //todo: record on motion/record on object options
+
     if (motion_detected)
     {
-        overlay_renderer->AddElement(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, "Motion Detected", cv::Point(10, 30), cv::Scalar(0, 0, 255), 1));
-
-        static int frame_count = 0;
-        frame_count++;
-
-        ObjectDetector::Object object_detected = ObjectDetector::Object::NONE;
-
-        if (frame_count % 3 == 0) //todo: make it configurable
+        if (!motion_detector->GetPreviousState())
         {
-            object_detected = object_detector->Detect(frame);
-            frame_count = 0;
+            timer = OpenGuard::Utils::Timer();
+            HookManager::GetInstance().ExecuteHooks("on_motion", {});
         }
 
-        //overlay_renderer->AddElement(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, object_string, cv::Point(10, 60), cv::Scalar(0, 255, 0), 1));
+        object_detected = object_detector->Detect(frame);
+
+        if (object_detected != ObjectDetector::Object::NONE)
+        {
+            if(object_detector->GetCallCount() == 1)
+                HookManager::GetInstance().ExecuteHooks("on_object", {{"object", ObjectDetector::GetObjectString(object_detected)}});
+
+            std::string object_string = object_detector->GetObjectString(object_detected);
+
+            overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, object_string, cv::Point(10, 60), cv::Scalar(0, 255, 0), 1));
+        }
     }
-    recorder->AddFrame(frame, motion_detected);
+
+    if (!motion_detected && timer.HasElapsed(3))
+    {
+        timer.Reset();
+        object_detector->ResetState();
+    }
 
 
-
-
-    //Todo: In report talk about how I went to optimise the text rendering but then turns out it wasnt the issue but still worth it
-    overlay_renderer->AddElement(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, "FPS: " + std::to_string(cap.GetFPS()), cv::Point(10, 50), cv::Scalar(0, 0, 255), 1));
+    overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, "FPS: " +std::to_string(cap.GetFPS()), cv::Point(10, 50), cv::Scalar(0, 0, 255), 1));
     overlay_renderer->Render(frame, cap.GetFrameSize());
+
+    recorder->AddFrame(frame, motion_detected, object_detected);
+
 
     this->processed_frame = frame;
 }
@@ -80,10 +94,9 @@ bool FrameProcessor::RenderFrame()
 
     if (!processed_frame.data)
     {
-        std::cerr << "Error: Unable to read frame." << std::endl;
+        Logger::GetInstance().Log("ERROR", "Unable to render frame (RenderFrame).");
         return false;
     }
-
 
     cv::imshow("Frame", processed_frame);
 

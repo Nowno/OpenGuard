@@ -39,27 +39,33 @@ class OverlayRenderer
         double font_scale;
         int font_type;
 
-        OverlayElement(DrawType t, cv::Scalar col, cv::Point pos, int thick = 1)
-                : type(t), color(col), position(pos), thickness(thick), alpha(1.0f), radius(0), font_scale(1.0), font_type(cv::FONT_HERSHEY_SIMPLEX) {}
+        bool persistent = false;
 
-        OverlayElement(DrawType t, std::string txt, cv::Point pos, cv::Scalar col, double scale = 0.5, int thick = 1, int font = cv::FONT_HERSHEY_SIMPLEX)
-                : type(t), text(txt), position(pos), color(col), thickness(thick), alpha(1.0f), radius(0), font_scale(scale), font_type(font) {}
+        // Constructor for basic shapes
+        OverlayElement(DrawType t, cv::Scalar col, cv::Point pos, int thick = 1, bool persist = false)
+                : type(t), color(col), position(pos), thickness(thick), alpha(1.0f), radius(0), font_scale(1.0), font_type(cv::FONT_HERSHEY_SIMPLEX), persistent(persist) {}
 
-        OverlayElement(DrawType t, cv::Rect r, cv::Scalar col, int thick = 1)
-                : type(t), rect(r), color(col), thickness(thick), alpha(1.0f), radius(0), font_scale(1.0), font_type(cv::FONT_HERSHEY_SIMPLEX) {}
+        OverlayElement(DrawType t, std::string txt, cv::Point pos, cv::Scalar col, double scale = 0.5, int thick = 1, int font = cv::FONT_HERSHEY_SIMPLEX, bool persist = false)
+                : type(t), text(txt), position(pos), color(col), thickness(thick), alpha(1.0f), radius(0), font_scale(scale), font_type(font), persistent(persist) {}
 
-        OverlayElement(DrawType t, cv::Point center, int rad, cv::Scalar col, int thick = 1)
-                : type(t), position(center), radius(rad), color(col), thickness(thick), alpha(1.0f), font_scale(1.0), font_type(cv::FONT_HERSHEY_SIMPLEX) {}
+        OverlayElement(DrawType t, cv::Rect r, cv::Scalar col, int thick = 1, bool persist = false)
+                : type(t), rect(r), color(col), thickness(thick), alpha(1.0f), radius(0), font_scale(1.0), font_type(cv::FONT_HERSHEY_SIMPLEX), persistent(persist) {}
 
-        OverlayElement(DrawType t, cv::Rect r, cv::Scalar col, float a)
-                : type(t), rect(r), color(col), thickness(-1), alpha(a), radius(0), font_scale(1.0), font_type(cv::FONT_HERSHEY_SIMPLEX) {}
-    };
+        OverlayElement(DrawType t, cv::Point center, int rad, cv::Scalar col, int thick = 1, bool persist = false)
+                : type(t), position(center), radius(rad), color(col), thickness(thick), alpha(1.0f), font_scale(1.0), font_type(cv::FONT_HERSHEY_SIMPLEX), persistent(persist) {}
 
-    void AddElement(OverlayElement element);
+        OverlayElement(DrawType t, cv::Rect r, cv::Scalar col, float a, bool persist = false)
+                : type(t), rect(r), color(col), thickness(-1), alpha(a), radius(0), font_scale(1.0), font_type(cv::FONT_HERSHEY_SIMPLEX), persistent(persist) {}    };
+
+
+    void Add(const OverlayElement &element);
     void Render(cv::Mat& frame, cv::Size size);
 
+    void InvalidatePersistent();
+    bool IsPersistentInvalid() const;
+
     private:
-    cv::Mat overlay;
+    cv::Mat persistent_overlay;
     std::vector<OverlayElement> elements;
 };
 

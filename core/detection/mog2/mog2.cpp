@@ -1,6 +1,6 @@
 #include "mog2.hpp"
 #include <opencv2/opencv.hpp>
-#include <iostream>
+#include "../../openguard.hpp"
 
 MOG2Detector::MOG2Detector(int threshold)
 {
@@ -72,10 +72,13 @@ bool MOG2Detector::Detect(cv::Mat& frame)
         std::vector<cv::Rect> motionBoxes = getMotionBB(fgMask);
 
         for (const auto& box : motionBoxes)
-            overlay_renderer->AddElement(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::RECTANGLE, box, cv::Scalar(0, 255, 0), 2));
+            overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::RECTANGLE, box, cv::Scalar(0, 255, 0), 2));
     }
 
-    return motionPixels > motion_threshold;
+    prev_state = motion_detected;
+    motion_detected = motionPixels > motion_threshold;
+
+    return motion_detected;
 }
 
 void MOG2Detector::setDrawBoundingBoxes(bool draw)

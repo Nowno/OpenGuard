@@ -15,6 +15,7 @@ class MOG2Detector : public MotionDetector
     bool initialized;
     bool is_flickering;
     bool draw_bounding_boxes = false;
+    bool motion_detected = false;
 
     double prev_brightness;
 

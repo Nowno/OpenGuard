@@ -2,7 +2,7 @@
 #define OPENGUARD_CAPTURE_HPP
 //todo: optimise imports
 #include <opencv2/opencv.hpp>
-#include "../../util/utils.hpp"
+#include "../../utils/utils.hpp"
 
 class Capture
 {

@@ -1,10 +1,13 @@
-#include "recorder.hpp"
-#include "../../util/configs/user_config.hpp"
-#include "../../util/utils.hpp"
 #include <iostream>
 #include <filesystem>
 #include <sstream>
 #include <opencv2/videoio.hpp>
+
+#include "recorder.hpp"
+#include "../openguard.hpp"
+#include "../../utils/utils.hpp"
+#include "../hook_manager/hook_manager.hpp"
+
 //todo: comments
 Recorder::Recorder(cv::Size frame_size, int fps) : frame_size(frame_size), fps(fps), recording(false)
 {
@@ -26,7 +29,7 @@ Recorder::~Recorder()
     Stop();
 }
 
-void Recorder::AddFrame(const cv::Mat& frame, bool motion_detected)
+void Recorder::AddFrame(const cv::Mat& frame, bool motion_detected, ObjectDetector::Object object_detected)
 {
     static int post_record_counter = 0;
 
@@ -36,6 +39,8 @@ void Recorder::AddFrame(const cv::Mat& frame, bool motion_detected)
 
     if (motion_detected)
     {
+        this->flagged_object = object_detected;
+
         if (!recording)
             Start();
 
@@ -57,6 +62,11 @@ void Recorder::Start()
 {
     if (recording)
         return;
+
+/*
+    if (ConfigManager::GetInstance().GetConfig<std::string>("record_trigger").find(ObjectDetector::GetObjectString(flagged_object)) == std::string::npos)
+        return;
+*/
 
     std::stringstream filename;
     filename << outdir << "/motion_" << OpenGuard::Utils::DateTimeString() << ".avi";
@@ -111,11 +121,15 @@ void Recorder::ConvertToMP4(const std::string& file)
     }
     else
     {
+        //todo: handle
     }
 
-    converting = false;
+    HookManager::GetInstance().ExecuteHooks("on_video_saved", {{"file", out_file}, {"object", ObjectDetector::GetObjectString(flagged_object)}});
+
+//    converting = false;
 
     std::string next_file;
+
     {
         std::lock_guard<std::mutex> lock(convert_queue_mutex);
         if (!convert_queue.empty())
@@ -128,8 +142,6 @@ void Recorder::ConvertToMP4(const std::string& file)
             converting = false;
         }
     }
-
-    //todo: hook here on_converted
 
     if (!next_file.empty())
     {
