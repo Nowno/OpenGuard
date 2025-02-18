@@ -52,7 +52,7 @@ class YOLODetector : public ObjectDetector
 
     bool draw_bounding_boxes = true;
 
-    int call_count = -1;
+    int call_count = 0;
 
     ObjectDetector::Object last_detection = ObjectDetector::Object::NONE;
     /**

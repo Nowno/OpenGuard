@@ -51,36 +51,36 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
 
     if (motion_detected)
     {
-        if (!motion_detector->GetPreviousState())
+        overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, "Motion Detected", cv::Point(10, 30), cv::Scalar(0, 0, 255), 1));
+        if (!recorder->IsRecording())
         {
-            timer = OpenGuard::Utils::Timer();
-            HookManager::GetInstance().ExecuteHooks("on_motion", {});
+            //HookManager::GetInstance().ExecuteHooks("on_motion", {});
         }
 
-        object_detected = object_detector->Detect(frame);
 
-        if (object_detected != ObjectDetector::Object::NONE)
+       /* if (object_detector->Detect(frame) != ObjectDetector::Object::NONE)
         {
-            if(object_detector->GetCallCount() == 1)
+            if (!object_state.GetPreviousState())
+            {
+                object_state.SetPreviousState(true);
+
                 HookManager::GetInstance().ExecuteHooks("on_object", {{"object", ObjectDetector::GetObjectString(object_detected)}});
+            }
 
             std::string object_string = object_detector->GetObjectString(object_detected);
 
+            Logger::GetInstance().Log("INFO", "Object detected: " + object_string);
+
             overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, object_string, cv::Point(10, 60), cv::Scalar(0, 255, 0), 1));
-        }
+        }*/
     }
 
-    if (!motion_detected && timer.HasElapsed(3))
-    {
-        timer.Reset();
-        object_detector->ResetState();
-    }
 
 
     overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, "FPS: " +std::to_string(cap.GetFPS()), cv::Point(10, 50), cv::Scalar(0, 0, 255), 1));
     overlay_renderer->Render(frame, cap.GetFrameSize());
 
-    recorder->AddFrame(frame, motion_detected, object_detected);
+    //recorder->AddFrame(frame, motion_detected, object_detected);
 
 
     this->processed_frame = frame;

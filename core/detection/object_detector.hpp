@@ -19,17 +19,6 @@ class ObjectDetector
     virtual Object Detect(const cv::Mat& frame) = 0;
 
     /**
-* @brief Resets some internal state.
- */
-    virtual void ResetState() { call_count = 0; last_detection = Object::NONE; }
-
-    /**
-     * @brief Get the number of times the detector was called.
-     * @return The number of times the detector was called.
-     */
-    int GetCallCount() const { return call_count; }
-
-    /**
      * @brief Set the overlay renderer.
      * @param renderer The overlay renderer.
      */
@@ -53,8 +42,6 @@ class ObjectDetector
 
     protected:
     std::shared_ptr<OverlayRenderer> overlay_renderer;
-    Object last_detection = Object::NONE;
-    int call_count = 0;
 };
 
 #endif // OPENGUARD_OBJECT_DETECTOR_HPP

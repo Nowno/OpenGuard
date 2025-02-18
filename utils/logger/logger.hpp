@@ -9,7 +9,7 @@ class Logger
 {
     public:
 
-    void Log(const std::string& type, const std::string& message);
+    void Log(const std::string& type, const std::string& message, bool save = true);
     static Logger& GetInstance()
     {
         static Logger instance;

@@ -178,7 +178,7 @@ YOLODetector::DetectionResult YOLODetector::PostProcess(const cv::Mat& frame, co
     cv::dnn::NMSBoxes(boxes, confidences, score_threshold, nms_threshold, indices);
 
     DetectionResult result;
-
+    //todo: fix persistant overlay
     // NMS removes the boxes with lower confidence, so we only keep the ones that are left
     for (int idx : indices)
     {
@@ -196,14 +196,6 @@ YOLODetector::DetectionResult YOLODetector::PostProcess(const cv::Mat& frame, co
     return result;
 }
 
-/**
- * @brief Resets the state of the detector.
- */
-void YOLODetector::ResetState()
-{
-    call_count = 0;
-    last_detection = Object::NONE;
-}
 
 /**
  * @brief Runs YOLO detection on a given frame.

@@ -15,6 +15,7 @@ Recorder::Recorder(cv::Size frame_size, int fps) : frame_size(frame_size), fps(f
     pre_record_buffer_size = fps * ConfigManager::GetInstance().GetConfig<int>("pre_record_length");
     post_record_buffer_size = fps * ConfigManager::GetInstance().GetConfig<int>("post_record_length");
 
+
     frame_buffer = std::deque<cv::Mat>();
 
     std::filesystem::create_directories(outdir);
@@ -89,12 +90,15 @@ void Recorder::Start()
 
 void Recorder::Stop()
 {
-    if (!recording) return;
+    if (!recording)
+        return;
 
-    std::cout << "Recording stopped: " << current_filename << std::endl;
+    Logger::GetInstance().Log("INFO", "Recording stopped: " + current_filename);
+
     video_writer.release();
     recording = false;
 
+    post_record_frames = ConfigManager::GetInstance().GetConfig<int>("post_record_frames");
 
     std::thread(&Recorder::ConvertToMP4, this, current_filename).detach();
 }

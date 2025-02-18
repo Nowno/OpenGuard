@@ -19,6 +19,8 @@ class Recorder
     void Stop();
     void AddFrame(const cv::Mat& frame, bool motion_detected, ObjectDetector::Object object_detected);
 
+    bool IsRecording() const { return recording; }
+
     private:
     cv::Size frame_size;
     int fps;

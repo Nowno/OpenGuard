@@ -52,27 +52,41 @@ namespace OpenGuard::Utils
         return str == "true";
     }
 
-inline std::string DateTimeString(bool file_safe = true)
-{
-    struct tm time_info;
-    time_t now = time(nullptr);
+    inline std::string DateTimeString(bool file_safe = true)
+    {
+        struct tm time_info;
+        time_t now = time(nullptr);
 
-    // Cross-platform localtime_s / localtime_r
-    #ifdef _WIN32
-        localtime_s(&time_info, &now);
-    #else
-        localtime_r(&now, &timeinfo);
-    #endif
+        // Cross-platform localtime_s / localtime_r
+        #ifdef _WIN32
+            localtime_s(&time_info, &now);
+        #else
+            localtime_r(&now, &timeinfo);
+        #endif
 
-    char buffer[80];
+        char buffer[80];
 
-    if (file_safe)
-        strftime(buffer, 80, "%Y-%m-%d %H-%M-%S", &time_info);
-    else
-        strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", &time_info);
+        if (file_safe)
+            strftime(buffer, 80, "%Y-%m-%d %H-%M-%S", &time_info);
+        else
+            strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", &time_info);
 
-    return std::string(buffer);
-}
+        return std::string(buffer);
+    }
+
+    class StateTracker
+    {
+        public:
+        StateTracker() {}
+
+        bool GetPreviousState() const { return prev_state; }
+
+        void SetPreviousState(bool state) { prev_state = state; }
+
+        private:
+        bool prev_state = false;
+    };
+
 
     struct Vec2
     {

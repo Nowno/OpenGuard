@@ -11,17 +11,15 @@ MOG2Detector::MOG2Detector(int threshold)
     mog2 = cv::createBackgroundSubtractorMOG2();
 
     //Shadow detection
-    mog2->setDetectShadows(true);
     //This is the value used to mark shadows in the foreground mask.
+    mog2->setDetectShadows(true);
     mog2->setShadowValue(127);
+
+    mog2->setVarThreshold(10);              // Lower threshold = more sensitivity
+    mog2->setHistory(300);                  // Number of frames to keep in memory
+    mog2->setShadowThreshold(0.5); // Reduce false positives from shadowsq
 }
 
-
-//Deprecated by yolov5
-bool MOG2Detector::LightFlickCheck(cv::Mat& frame)
-{
-    return false;
-}
 
 
 std::vector<cv::Rect> MOG2Detector::getMotionBB(const cv::Mat &fgMask)
@@ -42,11 +40,19 @@ std::vector<cv::Rect> MOG2Detector::getMotionBB(const cv::Mat &fgMask)
     return bounding_boxes;
 }
 
-void MOG2Detector::PreprocessFrame(cv::Mat& frame)
+void MOG2Detector::PreProcessFrame(cv::Mat& frame)
 {
-    // reduce noise before thresholding
-    cv::GaussianBlur(frame, frame, cv::Size(5, 5), 0);
+    //https://docs.opencv.org/3.4/d9/d61/tutorial_py_morphological_ops.html
+    auto kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+
+    //Remove small noise
+    cv::morphologyEx(frame, frame, cv::MORPH_OPEN, kernel);
+
+    //Fill the holes in the object produces by the previous call
+    cv::morphologyEx(frame, frame, cv::MORPH_CLOSE, kernel);
+
 }
+
 
 bool MOG2Detector::Detect(cv::Mat& frame)
 {
@@ -57,29 +63,20 @@ bool MOG2Detector::Detect(cv::Mat& frame)
     {
         if (--initialization_frames == 0)
             initialized = true;
-
-        //Todo print
-
         return false;
     }
 
-    PreprocessFrame(fgMask);
+    PreProcessFrame(fgMask); // Remove noise
+
+    int motionThreshold = frame.cols * frame.rows * 0.0025; // 0.25% of pixels
 
     int motionPixels = cv::countNonZero(fgMask);
 
-    if (this->draw_bounding_boxes)
-    {
-        std::vector<cv::Rect> motionBoxes = getMotionBB(fgMask);
+    cv::imshow("Foreground Mask", fgMask); // Debugging
 
-        for (const auto& box : motionBoxes)
-            overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::RECTANGLE, box, cv::Scalar(0, 255, 0), 2));
-    }
-
-    prev_state = motion_detected;
-    motion_detected = motionPixels > motion_threshold;
-
-    return motion_detected;
+    return motionPixels > motionThreshold;
 }
+
 
 void MOG2Detector::setDrawBoundingBoxes(bool draw)
 {

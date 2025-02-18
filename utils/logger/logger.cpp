@@ -13,10 +13,12 @@ Logger::Logger()
     }
 }
 
-void Logger::Log(const std::string& type, const std::string& message)
+void Logger::Log(const std::string& type, const std::string& message, bool save)
 {
     std::string log_message = "[" + OpenGuard::Utils::DateTimeString(false) + "] [" + type + "] " + message + "\n";
     std::cout << log_message;
+
+    if (!save) return;
 
     if (this->log_file.is_open())
     {

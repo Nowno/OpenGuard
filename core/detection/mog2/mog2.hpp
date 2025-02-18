@@ -20,7 +20,7 @@ class MOG2Detector : public MotionDetector
     double prev_brightness;
 
     bool LightFlickCheck(cv::Mat& frame);
-    void PreprocessFrame(cv::Mat& frame);
+    void PreProcessFrame(cv::Mat& frame);
 
     std::vector<cv::Rect> getMotionBB(const cv::Mat& fgMask);
 

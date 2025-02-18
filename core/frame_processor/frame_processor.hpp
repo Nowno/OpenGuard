@@ -5,6 +5,7 @@
 #include "../detection/motion_detector.hpp"
 #include "../detection/object_detector.hpp"
 #include "../recorder/recorder.hpp"
+
 class FrameProcessor
 {
     public:
@@ -21,6 +22,9 @@ class FrameProcessor
     private:
     std::unique_ptr<MotionDetector> motion_detector;
     std::unique_ptr<ObjectDetector> object_detector;
+
+    OpenGuard::Utils::StateTracker motion_state;
+    OpenGuard::Utils::StateTracker object_state;
 
     std::shared_ptr<OverlayRenderer> overlay_renderer;
 
