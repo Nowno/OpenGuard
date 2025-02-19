@@ -1,6 +1,3 @@
-//
-// Created by Nono on 07/02/2025.
-//
 #include "user_config.hpp"
 #include <filesystem>
 #include <iostream>
@@ -14,6 +11,8 @@ ConfigManager::ConfigManager()
 
 void ConfigManager::ResetConfig()
 {
+    Logger::GetInstance().Log("INFO", "Resetting config.");
+
     std::string config_path = "./config/config.json";
     std::filesystem::create_directories("./config");
     std::ofstream config_file(config_path);
@@ -29,10 +28,11 @@ void ConfigManager::LoadConfig()
     if (!std::filesystem::exists(config_path))
     {
         ResetConfig();
-        return;
+        LoadConfig();
     }
 
     std::ifstream config_file(config_path);
+
     try
     {
         config_file >> this->config;
@@ -42,6 +42,8 @@ void ConfigManager::LoadConfig()
         ResetConfig();
         this->config = nlohmann::json::parse(this->preset_config);
     }
+
+    std::cout << this->config << std::endl;
 }
 
 

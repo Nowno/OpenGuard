@@ -3,18 +3,31 @@
 
 Capture::Capture(int width, int height, int fps, int device)
 {
-    //todo: api preference
-    cap.open(device, cv::CAP_DSHOW);
+    #if defined(_WIN32)
+        cap.open(device, cv::CAP_DSHOW);
+    #elif defined(__linux__)
+        cap.open(device, cv::CAP_V4L2);
+    #else
+        cap.open(device);
+    #endif
 
     if (!cap.isOpened())
     {
-        std::cerr << "Error: Unable to initialize webcam." << std::endl;
+        Logger::GetInstance().Log("ERROR", "Unable to open capture device.");
         return;
     }
 
+    // Set resolution
     cap.set(cv::CAP_PROP_FRAME_WIDTH, width);
     cap.set(cv::CAP_PROP_FRAME_HEIGHT, height);
+
+    // Attempt to set FPS, some cameras may record at a different rate depending on lighting conditions
     cap.set(cv::CAP_PROP_FPS, fps);
+
+    // Adjust brightness, contrast, and gamma to improve image quality in case of low light
+    cap.set(cv::CAP_PROP_BRIGHTNESS, 150);
+    cap.set(cv::CAP_PROP_CONTRAST, 50);
+    cap.set(cv::CAP_PROP_GAMMA, 200);//todo make this a config option
 }
 Capture::~Capture()
 {
@@ -40,11 +53,6 @@ cv::VideoCapture Capture::GetCapture()
     return cap;
 }
 
-int Capture::GetFrameCount()
-{
-    return frame_count;
-}
-
 int Capture::GetFPS()
 {
     return fps;
@@ -65,14 +73,13 @@ void Capture::Update()
 {
     this->frame_count++;
 
-    static OpenGuard::Utils::Timer timer; // Static timer to track elapsed time
+    static OpenGuard::Utils::Timer timer;
 
-    if (timer.HasElapsed(1.0))  // If one second has passed
+    if (timer.HasElapsed(1.0))
     {
-        this->fps = frame_count;  // Save the frame count as FPS
-        frame_count = 0;  // Reset frame counter for the next second
+        this->fps = frame_count;
+        frame_count = 0;
         timer.Reset();
-        printf("FPS: %d\n", this->fps);
     }
 }
 

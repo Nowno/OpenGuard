@@ -16,6 +16,12 @@ OverlayRenderer::~OverlayRenderer()
 
 void OverlayRenderer::Add(const OverlayElement& element)
 {
+    if (element.persistent && persistent_invalid)
+    {
+        persistent_overlay = cv::Mat::zeros(persistent_overlay.size(), persistent_overlay.type());
+        persistent_invalid = false;
+    }
+
     this->elements.push_back(element);
 }
 
@@ -54,21 +60,11 @@ void OverlayRenderer::Render(cv::Mat &frame, cv::Size size)
                 //cv::addWeighted(draw_overlay, element.alpha, overlay, 1.0 - element.alpha, 0, frame);
                 break;
         }
+
     }
     //add persistent overlay to frame
     cv::addWeighted(frame, 1.0, persistent_overlay, 0.7, 0, frame);
     cv::addWeighted(frame, 1.0, draw_overlay, 0.7, 0, frame);
 
     elements.clear();
-}
-
-void OverlayRenderer::InvalidatePersistent()
-{
-    persistent_overlay = cv::Mat::zeros(persistent_overlay.size(), persistent_overlay.type());
-}
-
-
-bool OverlayRenderer::IsPersistentInvalid() const
-{
-    return persistent_overlay.empty() || cv::countNonZero(persistent_overlay) == 0;
 }

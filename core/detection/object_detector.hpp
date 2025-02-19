@@ -40,6 +40,18 @@ class ObjectDetector
         }
     }
 
+    static Object GetObjectFromString(const std::string& object)
+    {
+        if (object == "person")
+            return Object::PERSON;
+        else if (object == "cat" || object == "dog")
+            return Object::PET;
+        else if (object == "car" || object == "truck")
+            return Object::CAR;
+        else
+            return Object::NONE;
+    }
+
     protected:
     std::shared_ptr<OverlayRenderer> overlay_renderer;
 };

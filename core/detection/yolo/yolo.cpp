@@ -31,11 +31,11 @@ YOLODetector::YOLODetector()
     LoadClassNames(ConfigManager::GetInstance().GetConfig<std::string>("classes_path"));
 
     // Read detection thresholds
-    confidence_threshold = std::stof(ConfigManager::GetInstance().GetConfig<std::string>("confidence_threshold"));
-    score_threshold = std::stof(ConfigManager::GetInstance().GetConfig<std::string>("score_threshold"));
-    nms_threshold = std::stof(ConfigManager::GetInstance().GetConfig<std::string>("nms_threshold"));
+    confidence_threshold = ConfigManager::GetInstance().GetConfig<float>("confidence_threshold");
+    score_threshold = ConfigManager::GetInstance().GetConfig<float>("score_threshold");
+    nms_threshold = ConfigManager::GetInstance().GetConfig<float>("nms_threshold");
     // Set preferable backend & target (CPU or CUDA if available)
-    setHardwareAcceleration(ConfigManager::GetInstance().GetConfig<bool>("use_gpu"));
+    setHardwareAcceleration(ConfigManager::GetInstance().GetConfig<int>("use_gpu"));
 }
 
 /**
@@ -102,8 +102,12 @@ void YOLODetector::DrawBoundingBoxes(cv::Mat &frame, const YOLODetector::Detecti
         float confidence = result.confidences[i];
 
         std::string label = class_names[class_id] + " " + std::to_string(confidence);
+
         overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::RECTANGLE, box, cv::Scalar(0, 255, 0), 2, true));
-        overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, label, cv::Point(box.x,box.y - 10), cv::Scalar(0, 255, 0), 2, true));
+        overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, label, cv::Point(box.x,box.y - 10),
+                                                              cv::Scalar(0, 255, 0), 2, true, cv::FONT_HERSHEY_SIMPLEX, true));
+
+
     }
 }
 
@@ -152,6 +156,13 @@ YOLODetector::DetectionResult YOLODetector::PostProcess(const cv::Mat& frame, co
             // Proceed if class score is above threshold
             if (max_class_score > score_threshold)
             {
+                static std::unordered_set<std::string> record_worthy = ConfigManager::GetInstance().GetConfig<std::unordered_set<std::string>>("record_worthy");
+
+                std::string class_name = class_names[class_id_point.x];
+
+                if (record_worthy.find(class_name) == record_worthy.end())
+                    continue;
+
                 //center x, center y, width, height
                 float cx = output.at<float>(i, 0);
                 float cy = output.at<float>(i, 1);
@@ -204,7 +215,7 @@ ObjectDetector::Object YOLODetector::Detect(const cv::Mat &frame)
 {
     static int call_freq = ConfigManager::GetInstance().GetConfig<int>("object_detection_frequency");
 
-    if (call_count++ % call_freq != 0)
+    if (call_count++ % 3 != 0)
         return last_detection;
 
     // Preprocess the frame
@@ -214,7 +225,7 @@ ObjectDetector::Object YOLODetector::Detect(const cv::Mat &frame)
     // Ensure network input is valid
     if (blob.empty())
     {
-        std::cerr << "Error: Failed to create blob from image." << std::endl;
+        Logger::GetInstance().Log("ERROR", "YOLO blob is empty.");
         return Object::NONE;
     }
 
@@ -222,16 +233,14 @@ ObjectDetector::Object YOLODetector::Detect(const cv::Mat &frame)
     std::vector<cv::Mat> outputs;
     net.forward(outputs, net.getUnconnectedOutLayersNames());
 
-    // Ensure we received valid output
     if (outputs.empty())
     {
-        std::cerr << "Error: YOLO did not return any valid detections." << std::endl;
+        Logger::GetInstance().Log("ERROR", "YOLO outputs are empty.");
         return Object::NONE;
     }
 
     DetectionResult result = PostProcess(frame, outputs);
 
-    //todo: only look for person, dog, cat, car, truck
     if (this->draw_bounding_boxes)
     {
         overlay_renderer->InvalidatePersistent();
@@ -245,13 +254,9 @@ ObjectDetector::Object YOLODetector::Detect(const cv::Mat &frame)
 
     //this->detection_count++;
 
-    if (detected_object == "person")
-        return Object::PERSON;
-    else if (detected_object == "dog" || detected_object == "cat")
-        return Object::PET;
-    else if (detected_object == "car" || detected_object == "truck")
-        return Object::CAR;
-    else
-        return Object::NONE;
-    //todo: implement detection count
+    last_detection = ObjectDetector::GetObjectFromString(detected_object);
+
+
+
+    return last_detection;
 }

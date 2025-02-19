@@ -36,15 +36,15 @@ class Recorder
 
     bool recording;
 
-    int post_record_frames;
+    int post_record_counter;
     int post_record_buffer_size;
     int pre_record_buffer_size;
 
     ObjectDetector::Object flagged_object;
 
-    void ConvertToMP4(const std::string& filename);
+    void ConvertToMP4(const std::string& filename, ObjectDetector::Object object_detected);
 
-    std::deque<std::string> convert_queue;
+    std::deque<std::pair<std::string, ObjectDetector::Object>> convert_queue;
     std::mutex convert_queue_mutex;
 };
 

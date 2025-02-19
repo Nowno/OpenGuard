@@ -3,8 +3,11 @@
 
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include "../libs/json.hpp"
+#include "../logger/logger.hpp"
 
+//Todo: Refactor
 class ConfigManager
 {
     public:
@@ -13,14 +16,30 @@ class ConfigManager
     {
         try
         {
-            return this->config[key].get<T>();
+            if constexpr (std::is_same_v<T, bool>)
+            {
+                return (this->config[key].get<std::string>() == "true");
+            }
+            else if constexpr (std::is_same_v<T, std::unordered_set<std::string>>)
+            {
+                std::unordered_set<std::string> set;
+                for (const auto& item : this->config[key])
+                {
+                    set.insert(item.get<std::string>());
+                }
+                return set;
+            }
+            else
+            {
+                return this->config[key].get<T>();
+            }
         }
         catch (nlohmann::json::exception &e)
         {
-            //Todo: log
+            Logger::GetInstance().Log("ERROR", "Failed to get config value: " + key + " " + e.what());
+
             return T();
         }
-
     }
 
     private:
@@ -51,8 +70,9 @@ class ConfigManager
         "post_record_length": "2",
         "python_prefix": "python",
         "log_path": "default",
-        "record_trigger_objects": ["person", "car", "pet"],
-        "object_detection_frequency": "3",
+        "record_worthy": ["person", "car", "pet"],
+        "object_detection_frequency": "3"
+
     })";
 };
 

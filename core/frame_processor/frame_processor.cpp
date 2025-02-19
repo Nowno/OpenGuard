@@ -52,35 +52,35 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
     if (motion_detected)
     {
         overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, "Motion Detected", cv::Point(10, 30), cv::Scalar(0, 0, 255), 1));
+
         if (!recorder->IsRecording())
         {
+            Logger::GetInstance().Log("INFO", "Motion triggered.", false);
             //HookManager::GetInstance().ExecuteHooks("on_motion", {});
         }
 
+        object_detected = object_detector->Detect(frame);
 
-       /* if (object_detector->Detect(frame) != ObjectDetector::Object::NONE)
+        if (object_detected != ObjectDetector::Object::NONE)
         {
-            if (!object_state.GetPreviousState())
+            if (!recorder->IsRecording())
             {
-                object_state.SetPreviousState(true);
-
-                HookManager::GetInstance().ExecuteHooks("on_object", {{"object", ObjectDetector::GetObjectString(object_detected)}});
+                //HookManager::GetInstance().ExecuteHooks("on_object", {{"object", ObjectDetector::GetObjectString(object_detected)}});
             }
 
             std::string object_string = object_detector->GetObjectString(object_detected);
 
-            Logger::GetInstance().Log("INFO", "Object detected: " + object_string);
+            //Logger::GetInstance().Log("INFO", "Object detected: " + object_string);
 
             overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, object_string, cv::Point(10, 60), cv::Scalar(0, 255, 0), 1));
-        }*/
+        }
     }
-
 
 
     overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, "FPS: " +std::to_string(cap.GetFPS()), cv::Point(10, 50), cv::Scalar(0, 0, 255), 1));
     overlay_renderer->Render(frame, cap.GetFrameSize());
 
-    //recorder->AddFrame(frame, motion_detected, object_detected);
+    recorder->AddFrame(frame, motion_detected, object_detected);
 
 
     this->processed_frame = frame;

@@ -1,21 +1,17 @@
+#include "recorder.hpp"
+#include "../../utils/configs/user_config.hpp"
+#include "../../utils/utils.hpp"
 #include <iostream>
 #include <filesystem>
 #include <sstream>
 #include <opencv2/videoio.hpp>
-
-#include "recorder.hpp"
-#include "../openguard.hpp"
-#include "../../utils/utils.hpp"
-#include "../hook_manager/hook_manager.hpp"
-
+#include <unordered_set>
 //todo: comments
 Recorder::Recorder(cv::Size frame_size, int fps) : frame_size(frame_size), fps(fps), recording(false)
 {
     outdir = ConfigManager::GetInstance().GetConfig<std::string>("output_path");
-    pre_record_buffer_size = fps * ConfigManager::GetInstance().GetConfig<int>("pre_record_length");
-    post_record_buffer_size = fps * ConfigManager::GetInstance().GetConfig<int>("post_record_length");
-
-
+    pre_record_buffer_size = 60;
+    post_record_buffer_size = 60;
     frame_buffer = std::deque<cv::Mat>();
 
     std::filesystem::create_directories(outdir);
@@ -33,15 +29,23 @@ Recorder::~Recorder()
 void Recorder::AddFrame(const cv::Mat& frame, bool motion_detected, ObjectDetector::Object object_detected)
 {
     static int post_record_counter = 0;
+    static std::unordered_set<std::string> record_worthy = ConfigManager::GetInstance().GetConfig<std::unordered_set<std::string>>("record_worthy");
 
     frame_buffer.push_back(frame.clone());
+
     if (frame_buffer.size() > pre_record_buffer_size)
         frame_buffer.pop_front();
 
-    if (motion_detected)
-    {
-        this->flagged_object = object_detected;
+    bool object_detected_flagged = record_worthy.find(ObjectDetector::GetObjectString(object_detected)) != record_worthy.end();
 
+    std::cout << "Object detected: " << object_detected_flagged << std::endl;
+
+    if (object_detected_flagged)
+        flagged_object = object_detected;
+
+    if (motion_detected && this->flagged_object != ObjectDetector::Object::NONE)
+    {
+        std::cout << "Motion frfr: " << ObjectDetector::GetObjectString(this->flagged_object) << std::endl;
         if (!recording)
             Start();
 
@@ -64,10 +68,7 @@ void Recorder::Start()
     if (recording)
         return;
 
-/*
-    if (ConfigManager::GetInstance().GetConfig<std::string>("record_trigger").find(ObjectDetector::GetObjectString(flagged_object)) == std::string::npos)
-        return;
-*/
+    Logger::GetInstance().Log("INFO", "Recording started.");
 
     std::stringstream filename;
     filename << outdir << "/motion_" << OpenGuard::Utils::DateTimeString() << ".avi";
@@ -90,27 +91,25 @@ void Recorder::Start()
 
 void Recorder::Stop()
 {
-    if (!recording)
-        return;
+    if (!recording) return;
 
-    Logger::GetInstance().Log("INFO", "Recording stopped: " + current_filename);
-
+    std::cout << "Recording stopped: " << current_filename << std::endl;
     video_writer.release();
     recording = false;
 
-    post_record_frames = ConfigManager::GetInstance().GetConfig<int>("post_record_frames");
+    std::thread(&Recorder::ConvertToMP4, this, current_filename, this->flagged_object).detach();
 
-    std::thread(&Recorder::ConvertToMP4, this, current_filename).detach();
+    this->flagged_object = ObjectDetector::Object::NONE;
 }
 
 
-void Recorder::ConvertToMP4(const std::string& file)
+void Recorder::ConvertToMP4(const std::string& file, ObjectDetector::Object object_detected)
 {
     if (converting.exchange(true))
     {
         //todo: proper error logging
         std::lock_guard<std::mutex> lock(convert_queue_mutex);
-        convert_queue.push_back(file);
+        convert_queue.push_back(std::make_pair(file, object_detected));
         return;
     }
 
@@ -125,15 +124,11 @@ void Recorder::ConvertToMP4(const std::string& file)
     }
     else
     {
-        //todo: handle
     }
 
-    HookManager::GetInstance().ExecuteHooks("on_video_saved", {{"file", out_file}, {"object", ObjectDetector::GetObjectString(flagged_object)}});
+    converting = false;
 
-//    converting = false;
-
-    std::string next_file;
-
+    std::pair<std::string, ObjectDetector::Object> next_file;
     {
         std::lock_guard<std::mutex> lock(convert_queue_mutex);
         if (!convert_queue.empty())
@@ -147,8 +142,10 @@ void Recorder::ConvertToMP4(const std::string& file)
         }
     }
 
-    if (!next_file.empty())
+    //todo: hook here on_converted
+
+    if (!next_file.first.empty())
     {
-        std::thread(&Recorder::ConvertToMP4, this, next_file).detach();
+        std::thread(&Recorder::ConvertToMP4, this, next_file.first, next_file.second).detach();
     }
 }

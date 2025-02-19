@@ -6,6 +6,9 @@
 
 int main()
 {
+    //Log application start
+    Logger::GetInstance().Log("INFO", "Application started.");
+
     //Set up capture
     Capture cap(640, 480, 30);
 
@@ -15,7 +18,7 @@ int main()
 
     auto object_detector = std::make_unique<YOLODetector>();
     object_detector->setHardwareAcceleration(false);
-    object_detector->setDrawBoundingBoxes(false);
+    object_detector->setDrawBoundingBoxes(true);
 
     //Create frame processor and assign motion and object detectors
     FrameProcessor fp(cap);
@@ -43,9 +46,6 @@ int main()
 
     // 3 - Execute on_start hooks
     hook_manager.ExecuteHooks("on_start", {{"time", std::to_string(time(0))}});
-
-    //Log application start
-    Logger::GetInstance().Log("INFO", "Application started.");
 
     while (true)
     {

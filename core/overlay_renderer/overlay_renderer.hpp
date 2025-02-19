@@ -61,11 +61,12 @@ class OverlayRenderer
     void Add(const OverlayElement &element);
     void Render(cv::Mat& frame, cv::Size size);
 
-    void InvalidatePersistent();
-    bool IsPersistentInvalid() const;
+    void InvalidatePersistent() { persistent_invalid = true; }
+    bool IsPersistentInvalid() const { return persistent_invalid; }
 
     private:
     cv::Mat persistent_overlay;
+    bool persistent_invalid = true;
     std::vector<OverlayElement> elements;
 };
 
