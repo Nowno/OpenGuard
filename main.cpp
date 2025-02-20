@@ -39,11 +39,6 @@ int main()
         return 0;
     }, false));
 
-    hook_manager.RegisterHook("on_object", HookManager::Hook(HookManager::HookType::NATIVE, [](const std::unordered_map<std::string, std::string>& args) -> int {
-        Logger::GetInstance().Log("INFO", "detected object: " + args.at("object"));
-        return 0;
-    },false));
-
     // 3 - Execute on_start hooks
     hook_manager.ExecuteHooks("on_start", {{"time", std::to_string(time(0))}});
 

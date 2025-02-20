@@ -10,14 +10,13 @@ MOG2Detector::MOG2Detector(int threshold)
 
     mog2 = cv::createBackgroundSubtractorMOG2();
 
-    //Shadow detection
-    //This is the value used to mark shadows in the foreground mask.
+    //Shadow detection todo: grab from config
     mog2->setDetectShadows(true);
     mog2->setShadowValue(127);
+    mog2->setShadowThreshold(0.5); // Reduce false positives from shadowsq
 
     mog2->setVarThreshold(10);              // Lower threshold = more sensitivity
     mog2->setHistory(300);                  // Number of frames to keep in memory
-    mog2->setShadowThreshold(0.5); // Reduce false positives from shadowsq
 }
 
 
@@ -50,7 +49,6 @@ void MOG2Detector::PreProcessFrame(cv::Mat& frame)
 
     //Fill the holes in the object produces by the previous call
     cv::morphologyEx(frame, frame, cv::MORPH_CLOSE, kernel);
-
 }
 
 
@@ -66,13 +64,23 @@ bool MOG2Detector::Detect(cv::Mat& frame)
         return false;
     }
 
-    PreProcessFrame(fgMask); // Remove noise
+    PreProcessFrame(fgMask);
 
     int motionThreshold = frame.cols * frame.rows * 0.0025; // 0.25% of pixels
 
     int motionPixels = cv::countNonZero(fgMask);
 
-    cv::imshow("Foreground Mask", fgMask); // Debugging
+    if (this->draw_bounding_boxes)
+    {
+        auto bounding_boxes = getMotionBB(fgMask);
+
+        for (const auto& box : bounding_boxes)
+        {
+            overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::RECTANGLE, box, cv::Scalar(0, 255, 0), 2));
+        }
+    }
+
+    //cv::imshow("Foreground Mask", fgMask); dbg
 
     return motionPixels > motionThreshold;
 }

@@ -133,7 +133,7 @@ YOLODetector::DetectionResult YOLODetector::PostProcess(const cv::Mat& frame, co
 
     if (output.empty())
     {
-        std::cerr << "Output layer is empty" << std::endl;
+       Logger::GetInstance().Log("ERROR", "YOLO output is empty.");
         return {};
     }
 
@@ -195,7 +195,7 @@ YOLODetector::DetectionResult YOLODetector::PostProcess(const cv::Mat& frame, co
     {
         if (idx >= boxes.size())
         {
-            std::cerr << "NMS inde out of range." << std::endl; // todo: better logging system
+            Logger::GetInstance().Log("ERROR", "NMS index out of range.");
             continue;
         }
 
@@ -215,7 +215,7 @@ ObjectDetector::Object YOLODetector::Detect(const cv::Mat &frame)
 {
     static int call_freq = ConfigManager::GetInstance().GetConfig<int>("object_detection_frequency");
 
-    if (call_count++ % 3 != 0)
+    if (call_count++ % call_freq != 0)
         return last_detection;
 
     // Preprocess the frame

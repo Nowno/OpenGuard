@@ -2,10 +2,10 @@
 #include <filesystem>
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 #include "hook_manager.hpp"
 #include "../openguard.hpp"
-#include "../../utils/libs/json.hpp"
 
 using json = nlohmann::json;
 
@@ -13,7 +13,7 @@ void HookManager::RegisterHooks(const std::string& hook_path)
 {
     if (!std::filesystem::exists(hook_path))
     {
-        std::cerr << "Hook path does not exist, creating it." << std::endl;
+        Logger::GetInstance().Log("WARNING", "Hook path did not exist: " + hook_path);
         std::filesystem::create_directories(hook_path);
 
         return;
@@ -21,17 +21,23 @@ void HookManager::RegisterHooks(const std::string& hook_path)
 
     std::string event_name = std::filesystem::path(hook_path).filename().string();
 
+    std::vector<std::string> hook_files;
+
     for (const auto& script_file : std::filesystem::directory_iterator(hook_path))
     {
         std::string script_path = script_file.path().string();
         std::string ext = script_path.substr(script_path.find_last_of('.') + 1);
 
         if (ext == "py" /*|| ext == "js" || ext == "sh"*/)
-        {
-            RegisterHook(event_name, Hook(HookType::EXTERNAL, script_path, IsBlocking(script_path)));
-        }
+            hook_files.push_back(script_path);
     }
-    //todo: sort by name
+
+    std::sort(hook_files.begin(), hook_files.end());
+
+    for (const std::string& hook_file : hook_files)
+    {
+        RegisterHook(event_name, Hook(HookType::EXTERNAL, hook_file, IsBlocking(hook_file)));
+    }
 }
 
 void HookManager::RegisterHook(const std::string& event, const Hook& hook)

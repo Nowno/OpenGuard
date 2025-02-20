@@ -1,11 +1,11 @@
-#include "recorder.hpp"
-#include "../../utils/configs/user_config.hpp"
-#include "../../utils/utils.hpp"
 #include <iostream>
 #include <filesystem>
 #include <sstream>
 #include <opencv2/videoio.hpp>
 #include <unordered_set>
+
+#include "recorder.hpp"
+
 //todo: comments
 Recorder::Recorder(cv::Size frame_size, int fps) : frame_size(frame_size), fps(fps), recording(false)
 {
@@ -71,7 +71,7 @@ void Recorder::Start()
     Logger::GetInstance().Log("INFO", "Recording started.");
 
     std::stringstream filename;
-    filename << outdir << "/motion_" << OpenGuard::Utils::DateTimeString() << ".avi";
+    filename << outdir << "/motion_" << OpenGuard::Utils::GetDateTimeString(true) << ".avi";
     current_filename = filename.str();
 
     video_writer.open(current_filename, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('X', 'V', 'I', 'D'), fps, frame_size, true);
@@ -93,7 +93,8 @@ void Recorder::Stop()
 {
     if (!recording) return;
 
-    std::cout << "Recording stopped: " << current_filename << std::endl;
+    Logger::GetInstance().Log("INFO", "Recording stopped.");
+
     video_writer.release();
     recording = false;
 

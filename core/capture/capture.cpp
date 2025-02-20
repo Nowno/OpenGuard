@@ -28,7 +28,11 @@ Capture::Capture(int width, int height, int fps, int device)
     cap.set(cv::CAP_PROP_BRIGHTNESS, 150);
     cap.set(cv::CAP_PROP_CONTRAST, 50);
     cap.set(cv::CAP_PROP_GAMMA, 200);//todo make this a config option
+
+    this->frame_timer = OpenGuard::Utils::Timer();
+    this->fps_timer = OpenGuard::Utils::Timer();
 }
+
 Capture::~Capture()
 {
     cap.release();
@@ -40,7 +44,7 @@ cv::Mat Capture::GetFrame()
 {
     if (!cap.read(frame))
     {
-        std::cerr << "Error: Unable to read frame." << std::endl;
+        Logger::GetInstance().Log("ERROR", "Unable to read frame.");
 
         return cv::Mat();
     }
@@ -58,6 +62,11 @@ int Capture::GetFPS()
     return fps;
 }
 
+int Capture::GetFrameTime()
+{
+    return frame_time;
+}
+
 cv::Size Capture::GetFrameSize()
 {
     //Only need to get this once since it won't change
@@ -73,13 +82,14 @@ void Capture::Update()
 {
     this->frame_count++;
 
-    static OpenGuard::Utils::Timer timer;
+    this->frame_time = this->frame_timer.GetDuration() * 1000;
+    this->frame_timer.Reset();
 
-    if (timer.HasElapsed(1.0))
+    if (this->fps_timer.HasElapsed(1.0))
     {
         this->fps = frame_count;
-        frame_count = 0;
-        timer.Reset();
+        this->frame_count = 0;
+        this->fps_timer.Reset();
     }
 }
 

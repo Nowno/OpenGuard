@@ -14,10 +14,10 @@ class Capture
     cv::VideoCapture GetCapture();
 
     cv::Size GetFrameSize();
-    int GetFrameCount();
-    int GetFPS();
 
-    void setFPS(int fps);
+    int GetFPS();
+    int GetFrameTime();
+
     void Update();
 
 
@@ -25,8 +25,11 @@ class Capture
     cv::VideoCapture cap;
     cv::Mat frame;
 
+    OpenGuard::Utils::Timer fps_timer;
+    OpenGuard::Utils::Timer frame_timer;
+
     int frame_count = 0;
-    int frame_counter = 0;
+    int frame_time = 0;
     int fps = 0;
 };
 

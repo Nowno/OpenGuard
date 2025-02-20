@@ -52,7 +52,7 @@ namespace OpenGuard::Utils
         return str == "true";
     }
 
-    inline std::string DateTimeString(bool file_safe = true)
+    inline std::string GetDateTimeString(bool file_safe = false)
     {
         struct tm time_info;
         time_t now = time(nullptr);
@@ -69,7 +69,7 @@ namespace OpenGuard::Utils
         if (file_safe)
             strftime(buffer, 80, "%Y-%m-%d %H-%M-%S", &time_info);
         else
-            strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", &time_info);
+            strftime(buffer, 80, "%Y/%m/%d %H:%M:%S", &time_info);
 
         return std::string(buffer);
     }
@@ -79,12 +79,12 @@ namespace OpenGuard::Utils
         public:
         StateTracker() {}
 
-        bool GetPreviousState() const { return prev_state; }
+        bool GetState() const { return this->state; }
 
-        void SetPreviousState(bool state) { prev_state = state; }
+        void SetState(bool new_state) { this->state = new_state; }
 
         private:
-        bool prev_state = false;
+        bool state = false;
     };
 
 
