@@ -84,9 +84,7 @@ class OverlayRenderer
     bool persistent_invalid = true;
     std::vector<OverlayElement> elements;
 
-    //capture pointer smart pointer
     Capture& cap;
-
 };
 
 

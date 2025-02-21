@@ -48,15 +48,14 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
 
     if (motion_detected)
     {
-        overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, "Motion Detected", cv::Point(10, 30), cv::Scalar(0, 0, 255), 1));
+        overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, "Motion", cv::Point(12, 45), cv::Scalar(255, 0, 255), 0.5));
 
         if (!previous_motion.GetState())
         {
             previous_motion.SetState(true);
 
             Logger::GetInstance().Log("INFO", "Motion triggered.", false);
-
-            //HookManager::GetInstance().ExecuteHooks("on_motion", {});
+            HookManager::GetInstance().ExecuteHooks("on_motion", {});
         }
 
         object_detected = object_detector->Detect(frame);
@@ -69,10 +68,6 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
             }
 
             std::string object_string = object_detector->GetObjectString(object_detected);
-
-            //Logger::GetInstance().Log("INFO", "Object detected: " + object_string);
-
-            overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, object_string, cv::Point(10, 60), cv::Scalar(0, 255, 0), 1));
         }
         else
         {

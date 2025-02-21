@@ -10,8 +10,8 @@
 Recorder::Recorder(cv::Size frame_size, int fps) : frame_size(frame_size), fps(fps), recording(false)
 {
     outdir = ConfigManager::GetInstance().GetConfig<std::string>("output_path");
-    pre_record_buffer_size = 60;
-    post_record_buffer_size = 60;
+    pre_record_buffer_size = ConfigManager::GetInstance().GetConfig<int>("pre_record_length") * fps;
+    post_record_buffer_size = ConfigManager::GetInstance().GetConfig<int>("post_record_length") * fps;
     frame_buffer = std::deque<cv::Mat>();
 
     std::filesystem::create_directories(outdir);
@@ -38,14 +38,12 @@ void Recorder::AddFrame(const cv::Mat& frame, bool motion_detected, ObjectDetect
 
     bool object_detected_flagged = record_worthy.find(ObjectDetector::GetObjectString(object_detected)) != record_worthy.end();
 
-    std::cout << "Object detected: " << object_detected_flagged << std::endl;
 
     if (object_detected_flagged)
         flagged_object = object_detected;
 
     if (motion_detected && this->flagged_object != ObjectDetector::Object::NONE)
     {
-        std::cout << "Motion frfr: " << ObjectDetector::GetObjectString(this->flagged_object) << std::endl;
         if (!recording)
             Start();
 

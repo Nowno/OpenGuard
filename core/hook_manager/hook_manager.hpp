@@ -17,13 +17,15 @@ class HookManager
 
     struct Hook
     {
-        Hook(HookType type, const std::function<int(const std::unordered_map<std::string, std::string>& args)>& callback, bool blocking = false) : type(type), callback(callback), blocking(blocking) {}
-        Hook(HookType type, const std::string& scriptPath, bool blocking = false) : type(type), script_path(scriptPath), blocking(blocking) {}
+        Hook(HookType type, const std::function<int(const std::unordered_map<std::string, std::string>& args)>& callback, bool blocking = false, int cooldown = 0) : type(type), callback(callback), blocking(blocking), cooldown(cooldown) {}
+        Hook(HookType type, const std::string& scriptPath, bool blocking = false, int cooldown = 0) : type(type), script_path(scriptPath), blocking(blocking), cooldown(cooldown) {}
 
         HookType type;
         std::function<int(const std::unordered_map<std::string, std::string>& args)> callback;
         std::string script_path;
         bool blocking;
+        int cooldown = 0;
+        int last_executed = 0;
     };
 
     // Singleton access
@@ -47,7 +49,11 @@ class HookManager
     HookManager(const HookManager&) = delete;
     HookManager& operator=(const HookManager&) = delete;
 
+    std::string GetHookHeader(const std::string& hook_path);
+
     bool IsBlocking(const std::string& hook_name);
+    int GetCooldown(const std::string& hook_name);
+
 
 
 };

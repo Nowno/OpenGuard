@@ -52,12 +52,26 @@ namespace OpenGuard::Utils
         return str == "true";
     }
 
+    inline std::string EscapeShell(const std::string& str)
+    {
+        std::string escaped;
+
+        for (char c : str)
+        {
+            if (c == '"')
+                escaped += "\\\"";
+            else
+                escaped += c;
+        }
+
+        return escaped;
+    }
+
     inline std::string GetDateTimeString(bool file_safe = false)
     {
         struct tm time_info;
         time_t now = time(nullptr);
 
-        // Cross-platform localtime_s / localtime_r
         #ifdef _WIN32
             localtime_s(&time_info, &now);
         #else

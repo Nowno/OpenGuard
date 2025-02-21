@@ -4,8 +4,10 @@
 #include <fstream>
 #include <algorithm>
 
+
 #include "hook_manager.hpp"
 #include "../openguard.hpp"
+#include "../../utils/utils.hpp"
 
 using json = nlohmann::json;
 
@@ -36,7 +38,7 @@ void HookManager::RegisterHooks(const std::string& hook_path)
 
     for (const std::string& hook_file : hook_files)
     {
-        RegisterHook(event_name, Hook(HookType::EXTERNAL, hook_file, IsBlocking(hook_file)));
+        RegisterHook(event_name, Hook(HookType::EXTERNAL, hook_file, IsBlocking(hook_file), GetCooldown(hook_file)));
     }
 }
 
@@ -63,8 +65,11 @@ void HookManager::ExecuteHooks(const std::string& hook_name, std::unordered_map<
             std::thread(on_hook.callback, args).detach();
     }
 
-    for (const Hook &hook: hooks[hook_name])
+    for (Hook &hook: hooks[hook_name])
     {
+        if (hook.cooldown && time(nullptr) - hook.last_executed < hook.cooldown)
+            continue;
+
         if (hook.type == HookType::NATIVE)
         {
             if (hook.blocking)
@@ -75,8 +80,8 @@ void HookManager::ExecuteHooks(const std::string& hook_name, std::unordered_map<
         else if (hook.type == HookType::EXTERNAL)
         {
             json data = args;
-            std::string json_args = data.dump();
-            std::string command = ConfigManager::GetInstance().GetConfig<std::string>("python_prefix") + " \"" + hook.script_path + "\" \"" + json_args + "\"";
+
+            std::string command = ConfigManager::GetInstance().GetConfig<std::string>("python_prefix") + " " + hook.script_path + " \"" + OpenGuard::Utils::EscapeShell(data.dump()) + "\"";
 
             if (hook.blocking)
             {
@@ -89,19 +94,50 @@ void HookManager::ExecuteHooks(const std::string& hook_name, std::unordered_map<
                 std::thread([command](){ std::system(command.c_str());}).detach();
             }
         }
+
+        hook.last_executed = time(nullptr);
     }
 }
 
-
-bool HookManager::IsBlocking(const std::string& hook_path)
+std::string HookManager::GetHookHeader(const std::string& hook_path)
 {
     std::ifstream file(hook_path);
 
     if (!file.is_open())
-        return false;
+        return "";
 
     std::string line;
     std::getline(file, line);
 
-    return line.find("BLOCKING") != std::string::npos;
+    return line;
+}
+
+bool HookManager::IsBlocking(const std::string& hook_path)
+{
+    return GetHookHeader(hook_path).find("BLOCKING") != std::string::npos;
+}
+
+int HookManager::GetCooldown(const std::string& hook_path)
+{
+    std::string header = GetHookHeader(hook_path);
+
+    size_t pos = header.find("COOLDOWN");
+
+    if (pos == std::string::npos)
+        return 0;
+
+    std::string cooldown = header.substr(pos + 9);
+
+    int cooldown_int = 0;
+
+    try
+    {
+        cooldown_int = std::stoi(cooldown);
+    }
+    catch (std::invalid_argument& e)
+    {
+        Logger::GetInstance().Log("ERROR", "Could not parse cooldown for hook: " + hook_path);
+    }
+
+    return cooldown_int;
 }

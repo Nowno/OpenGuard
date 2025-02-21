@@ -87,13 +87,12 @@ void YOLODetector::setDrawBoundingBoxes(bool draw)
 cv::Mat YOLODetector::PreProcess(const cv::Mat &frame)
 {
     cv::Mat resized;
-    cv::resize(frame, resized, cv::Size(640, 640)); // Ensuring correct YOLOv5 input size
+    cv::resize(frame, resized, cv::Size(480, 480)); // Ensuring correct YOLOv5 input size
     return resized;
 }
 
 void YOLODetector::DrawBoundingBoxes(cv::Mat &frame, const YOLODetector::DetectionResult &result)
-{        //            overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::RECTANGLE, box, cv::Scalar(0, 255, 0), 2));
-
+{
     // Draw detections on frame
     for (size_t i = 0; i < result.boxes.size(); i++)
     {
@@ -104,8 +103,7 @@ void YOLODetector::DrawBoundingBoxes(cv::Mat &frame, const YOLODetector::Detecti
         std::string label = class_names[class_id] + " " + std::to_string(confidence);
 
         overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::RECTANGLE, box, cv::Scalar(0, 255, 0), 2, true));
-        overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, label, cv::Point(box.x,box.y - 10),
-                                                              cv::Scalar(0, 255, 0), 2, true, cv::FONT_HERSHEY_SIMPLEX, true));
+        overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, label, cv::Point(box.x,box.y - 10), cv::Scalar(0, 255, 0), 2, true, cv::FONT_HERSHEY_SIMPLEX, true));
 
 
     }
@@ -120,8 +118,8 @@ YOLODetector::DetectionResult YOLODetector::PostProcess(const cv::Mat& frame, co
     std::vector<int> classIds;
     std::vector<float> confidences;
 
-    float x_factor = static_cast<float>(frame.cols) / 640;
-    float y_factor = static_cast<float>(frame.rows) / 640;
+    float x_factor = static_cast<float>(frame.cols) / 480;
+    float y_factor = static_cast<float>(frame.rows) / 480;
 
     if (outputs.empty())
     {

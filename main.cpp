@@ -11,7 +11,9 @@ int main()
 
     //Set up capture
     Capture cap(640, 480, 30);
-
+/*    Capture cap(ConfigManager::GetInstance().GetConfig<int>("capture_width"),
+                ConfigManager::GetInstance().GetConfig<int>("capture_height"),
+                ConfigManager::GetInstance().GetConfig<int>("capture_fps"));*/
     //Set up detectors
     auto motion_detector = std::make_unique<MOG2Detector>(10000); //todo: maybe take this from user config
     motion_detector->setDrawBoundingBoxes(false);
