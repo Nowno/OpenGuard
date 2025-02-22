@@ -1,6 +1,9 @@
 #include "capture.hpp"
 #include "../openguard.hpp"
 
+/**
+ * @brief Constructor: Initializes the capture object.
+ */
 Capture::Capture(int width, int height, int fps, int device)
 {
     #if defined(_WIN32)
@@ -40,6 +43,9 @@ Capture::~Capture()
 
 //https://stackoverflow.com/questions/30216812/opencv-is-cvmat-like-a-shared-ptr
 //Apparently cv::Mat behaves like a shared_ptr so we don't need to worry about ownership etc.
+/**
+ * @brief Get the current frame.
+ */
 cv::Mat Capture::GetFrame()
 {
     if (!cap.read(frame))
@@ -52,21 +58,33 @@ cv::Mat Capture::GetFrame()
     return frame;
 }
 
+/**
+ * @brief Returns the current capture object.
+ */
 cv::VideoCapture Capture::GetCapture()
 {
     return cap;
 }
 
+/**
+ * @brief Get the current FPS.
+ */
 int Capture::GetFPS()
 {
     return fps;
 }
 
+/**
+ * @brief Get the time it took to process the frame in ms.
+ */
 int Capture::GetFrameTime()
 {
     return frame_time;
 }
 
+/**
+ * @brief Get the size of the frame.
+ */
 cv::Size Capture::GetFrameSize()
 {
     //Only need to get this once since it won't change
@@ -78,18 +96,29 @@ cv::Size Capture::GetFrameSize()
     return size;
 }
 
+/**
+ * @brief Update various states.
+ */
 void Capture::Update()
 {
     this->frame_count++;
 
+    /// Calculate frame time in ms
     this->frame_time = this->frame_timer.GetDuration() * 1000;
     this->frame_timer.Reset();
 
+    /// Not as accurate as it can be but good enough, get the amount of frames there has been in a second
     if (this->fps_timer.HasElapsed(1.0))
     {
         this->fps = frame_count;
         this->frame_count = 0;
         this->fps_timer.Reset();
+
+        /// Added this as some cameras may run at a lower frame rate as they make up for low light conditions
+        if (this->fps < ConfigManager::GetInstance().GetConfig<int>("capture_fps") - 7)
+        {
+            Logger::GetInstance().Log("WARNING", "System running below target FPS.");
+        }
     }
 }
 

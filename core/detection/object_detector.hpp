@@ -16,6 +16,12 @@ class ObjectDetector
     };
 
     virtual ~ObjectDetector() = default;
+
+    /**
+     * @brief Detect objects in a frame.
+     * @param frame The input image to detect objects in.
+     * @return What object was detected.
+     */
     virtual Object Detect(const cv::Mat& frame) = 0;
 
     /**
@@ -40,6 +46,11 @@ class ObjectDetector
         }
     }
 
+    /**
+     * @brief The opposite of the previous function, gets the object from a string.
+     * @param object The string representation of the object.
+     * @return The object (enum).
+     */
     static Object GetObjectFromString(const std::string& object)
     {
         if (object == "person")

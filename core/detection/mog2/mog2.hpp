@@ -5,33 +5,47 @@
 
 class MOG2Detector : public MotionDetector
 {
+    public:
+    /**
+     * @brief Constructor: Initializes the MOG2 detector.
+     */
+    MOG2Detector();
+
+    /**
+     * @brief Detect motion in a frame.
+     * @param frame The input image to detect motion in.
+     * @return Whether motion was detected.
+     */
+    bool Detect(cv::Mat& frame) override;
+
+    /**
+     * @brief Set whether to draw bounding boxes or not.
+     * @param draw if true, bounding boxes will be drawn.
+     */
+    void setDrawBoundingBoxes(bool draw);
+
+
     private:
     //Basically a smart ptr.
     cv::Ptr<cv::BackgroundSubtractorMOG2> mog2;
 
-    int motion_threshold;
-    int initialization_frames;
+    int motion_threshold;      /// The threshold for motion detection
+    int initialization_frames; /// Number of frames to ignore
 
-    bool initialized;
-    bool is_flickering;
+    bool initialized = false;
     bool draw_bounding_boxes = false;
-    bool motion_detected = false;
 
-    double prev_brightness;
-
-    bool LightFlickCheck(cv::Mat& frame);
+    /**
+     * @brief Preprocesses the input frame, adding morphological operations.
+     */
     void PreProcessFrame(cv::Mat& frame);
 
+    /**
+     * @brief Get bounding boxes from the foreground mask.
+     * @param fgMask The foreground mask.
+     * @return A vector of bounding boxes.
+     */
     std::vector<cv::Rect> getMotionBB(const cv::Mat& fgMask);
-
-    public:
-    MOG2Detector(int threshold = 10000);
-    bool Detect(cv::Mat& frame) override;
-    void setDrawBoundingBoxes(bool draw);
-
 };
 
 #endif // OPENGUARD_MOG2_DETECTOR_HPP
-
-
-//todo:params for mog2

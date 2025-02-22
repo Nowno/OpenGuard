@@ -9,14 +9,19 @@
 
 namespace OpenGuard::Utils
 {
-    //Open file and return contents
-    inline std::string FileToString(const std::string& path)
+    /**
+     * @brief Read a file to a string.
+     * @param path The path to the file.
+     * @return The contents of the file in the form of a string.
+     */
+    [[maybe_unused]] inline std::string FileToString(const std::string& path)
     {
         std::ifstream file(path);
 
         if (!file.is_open())
             throw std::runtime_error("Failed to open: " + path);
 
+        /// Fit the whole file into a string (prone to memory issues with large files)
         std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
         file.close();
@@ -24,7 +29,12 @@ namespace OpenGuard::Utils
         return content;
     }
 
-    inline std::vector<std::string> FileToVector(const std::string& path)
+    /**
+     * @brief Read a file to a vector of strings.
+     * @param path The path to the file.
+     * @return The contents of the file in the from of a vector of strings.
+     */
+    [[maybe_unused]] inline std::vector<std::string> FileToVector(const std::string& path)
     {
         std::ifstream file(path);
 
@@ -44,6 +54,11 @@ namespace OpenGuard::Utils
         return content;
     }
 
+    /**
+     * @brief Convert a string to a boolean.
+     * @param str The string to convert.
+     * @return The boolean value.
+     */
     inline bool StringToBool(std::string str)
     {
         for (auto& c : str)
@@ -52,6 +67,11 @@ namespace OpenGuard::Utils
         return str == "true";
     }
 
+    /**
+     * @brief Escape a string for shell usage.
+     * @param str The string to escape.
+     * @return The escaped string.
+     */
     inline std::string EscapeShell(const std::string& str)
     {
         std::string escaped;
@@ -67,6 +87,11 @@ namespace OpenGuard::Utils
         return escaped;
     }
 
+    /**
+     * @brief Get the current date and time as a string.
+     * @param file_safe Whether the string should be safe for use in a file name.
+     * @return The current date and time as a string.
+     */
     inline std::string GetDateTimeString(bool file_safe = false)
     {
         struct tm time_info;
@@ -88,6 +113,9 @@ namespace OpenGuard::Utils
         return std::string(buffer);
     }
 
+    /**
+     * @brief Simple state tracker to avoid making static duplicates etc to check the previous state.
+     */
     class StateTracker
     {
         public:
@@ -102,6 +130,9 @@ namespace OpenGuard::Utils
     };
 
 
+    /**
+     * @brief Simple 2D vector, maybe unused.
+     */
     struct Vec2
     {
         int x;
@@ -111,6 +142,9 @@ namespace OpenGuard::Utils
         Vec2() : x(0), y(0) {}
     };
 
+    /**
+     * @brief Timer for measuring time.
+     */
     struct Timer
     {
         std::chrono::time_point<std::chrono::steady_clock> start;
@@ -135,9 +169,6 @@ namespace OpenGuard::Utils
             return GetDuration() >= seconds;
         }
     };
-
-    //todo: pretty print and error logging
-
 }
 
 using OpenGuard::Utils::Vec2;

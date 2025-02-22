@@ -1,16 +1,25 @@
 #include "overlay_renderer.hpp"
 
+/**
+ * @brief Invalidates the persistent overlay.
+ */
 void OverlayRenderer::InvalidatePersistent()
 {
      persistent_overlay = cv::Mat::zeros(persistent_overlay.size(), persistent_overlay.type());
      persistent_invalid = true;
 }
 
+/**
+ * @brief Add an overlay element.
+ */
 void OverlayRenderer::Add(const OverlayElement& element)
 {
     this->elements.push_back(element);
 }
 
+/**
+ * @brief Renders the HUD.
+ */
 void OverlayRenderer::RenderHUD(cv::Size size)
 {
     if (this->render_debug)
@@ -28,20 +37,27 @@ void OverlayRenderer::RenderHUD(cv::Size size)
     Add(OverlayElement(DrawType::TEXT, OpenGuard::Utils::GetDateTimeString(false), cv::Point(size.width - 150, size.height - 10), cv::Scalar(255, 255, 255), 0.4, 1, cv::FONT_HERSHEY_SIMPLEX, false));
 }
 
+/**
+ * @brief Render the overlay.
+ */
 void OverlayRenderer::Render(cv::Mat &frame, cv::Size size)
 {
     cv::Mat draw_overlay = cv::Mat::zeros(size.height, size.width, CV_8UC3);
 
+    /// If the persistent overlay is empty, create a black one
     if (persistent_overlay.empty())
         persistent_overlay = cv::Mat::zeros(size.height, size.width, CV_8UC3);
 
+    /// Render the HUD if enabled
     if (this->render_hud)
         RenderHUD(size);
 
     for (auto &element : elements)
     {
+        /// Determine which overlay to draw on
         auto overlay = element.persistent ? persistent_overlay : draw_overlay;
 
+        /// And simply draw the element depending on its type
         switch (element.type)
         {
             case DrawType::RECTANGLE:
@@ -69,10 +85,9 @@ void OverlayRenderer::Render(cv::Mat &frame, cv::Size size)
 
     }
 
-    //add persistent overlay to frame
-    cv::addWeighted(frame, 1.0, persistent_overlay, 0.7, 0, frame);
-    cv::addWeighted(frame, 1.0, draw_overlay, 0.7, 0, frame);
+    cv::addWeighted(frame, 1.0, persistent_overlay, 0.7, 0, frame); /// Add the persistent overlay to the frame
+    cv::addWeighted(frame, 1.0, draw_overlay, 0.7, 0, frame);       /// Add the draw overlay to the frame
 
-    elements.clear();
-    persistent_invalid = false;
+    elements.clear();            /// Clear the elements
+    persistent_invalid = false;  /// The persistent overlay is now valid as we've rendered it
 }

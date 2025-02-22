@@ -2,25 +2,37 @@
 #include <opencv2/opencv.hpp>
 #include "../../openguard.hpp"
 
-MOG2Detector::MOG2Detector(int threshold)
+MOG2Detector::MOG2Detector()
 {
-    this->motion_threshold = threshold;
-    this->initialization_frames = 30;
-    this->initialized = false;
+    int width = ConfigManager::GetInstance().GetConfig<int>("frame_width");
+    int height = ConfigManager::GetInstance().GetConfig<int>("frame_width");
+    float motion_threshold = ConfigManager::GetInstance().GetConfig<float>("motion_threshold");
 
+    /// Calculate the motion threshold based on the number of pixels
+    this->motion_threshold =  width * height * motion_threshold;
+
+    /// Number of frames to ignore
+    this->initialization_frames = ConfigManager::GetInstance().GetConfig<int>("frame_rate") * 2;
+
+    /// Create the MOG2 background subtractor
     mog2 = cv::createBackgroundSubtractorMOG2();
 
-    //Shadow detection todo: grab from config
-    mog2->setDetectShadows(true);
+    /// Shadow detection
+    mog2->setDetectShadows(ConfigManager::GetInstance().GetConfig<bool>("mog2_detect_shadows"));
     mog2->setShadowValue(127);
-    mog2->setShadowThreshold(0.5); // Reduce false positives from shadowsq
+    mog2->setShadowThreshold(0.5);  /// Reduce false positives from shadows
 
-    mog2->setVarThreshold(10);              // Lower threshold = more sensitivity
-    mog2->setHistory(300);                  // Number of frames to keep in memory
+    /// Sensitivity
+    mog2->setVarThreshold(ConfigManager::GetInstance().GetConfig<int>("mog2_sensitivity"));    /// Lower threshold = more sensitivity
+    mog2->setHistory(ConfigManager::GetInstance().GetConfig<int>("mog2_history"));             /// Number of frames to keep in memory
 }
 
 
-
+/**
+ * @brief Get bounding boxes from the foreground mask.
+ * @param fgMask The foreground mask.
+ * @return A vector of bounding boxes.
+ */
 std::vector<cv::Rect> MOG2Detector::getMotionBB(const cv::Mat &fgMask)
 {
     std::vector<std::vector<cv::Point>> contours;
@@ -32,6 +44,7 @@ std::vector<cv::Rect> MOG2Detector::getMotionBB(const cv::Mat &fgMask)
     {
         cv::Rect box = cv::boundingRect(contour);
 
+        /// Small triage to remove small noise
         if (box.area() > 500)
             bounding_boxes.push_back(box);
     }
@@ -39,15 +52,18 @@ std::vector<cv::Rect> MOG2Detector::getMotionBB(const cv::Mat &fgMask)
     return bounding_boxes;
 }
 
+/**
+ * @brief Preprocesses the input frame, adding morphological operations.
+ */
 void MOG2Detector::PreProcessFrame(cv::Mat& frame)
 {
-    //https://docs.opencv.org/3.4/d9/d61/tutorial_py_morphological_ops.html
+    /// https://docs.opencv.org/3.4/d9/d61/tutorial_py_morphological_ops.html
     auto kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
 
-    //Remove small noise
+    /// Remove small noise
     cv::morphologyEx(frame, frame, cv::MORPH_OPEN, kernel);
 
-    //Fill the holes in the object produces by the previous call
+    /// Fill the holes in the object produces by the previous call
     cv::morphologyEx(frame, frame, cv::MORPH_CLOSE, kernel);
 }
 
@@ -55,8 +71,11 @@ void MOG2Detector::PreProcessFrame(cv::Mat& frame)
 bool MOG2Detector::Detect(cv::Mat& frame)
 {
     cv::Mat fgMask;
+
+    /// Apply mog2 to the frame
     mog2->apply(frame, fgMask);
 
+    /// Edge case, sudden change in lighting upon initialization can cause false positives
     if (!initialized)
     {
         if (--initialization_frames == 0)
@@ -64,12 +83,13 @@ bool MOG2Detector::Detect(cv::Mat& frame)
         return false;
     }
 
-    PreProcessFrame(fgMask);
+    /// Preprocess the frame
+    this->PreProcessFrame(fgMask);
 
-    int motionThreshold = frame.cols * frame.rows * 0.0025; // 0.25% of pixels
+    /// Count the number of non-zero pixels
+    int motion_pixels = cv::countNonZero(fgMask);
 
-    int motionPixels = cv::countNonZero(fgMask);
-
+    /// Render bounding boxes if enabled
     if (this->draw_bounding_boxes)
     {
         auto bounding_boxes = getMotionBB(fgMask);
@@ -80,12 +100,17 @@ bool MOG2Detector::Detect(cv::Mat& frame)
         }
     }
 
-    //cv::imshow("Foreground Mask", fgMask); dbg
+    #ifdef DEBUG
+        cv::imshow("Foreground Mask", fgMask);
+    #endif
 
-    return motionPixels > motionThreshold;
+    /// Return whether the amount of motion exceeds the threshold
+    return motion_pixels > this->motion_threshold;
 }
 
-
+/**
+ * @brief Set whether to draw bounding boxes or not.
+ */
 void MOG2Detector::setDrawBoundingBoxes(bool draw)
 {
     this->draw_bounding_boxes = draw;

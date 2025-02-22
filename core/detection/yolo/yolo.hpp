@@ -46,12 +46,13 @@ class YOLODetector : public ObjectDetector
     cv::dnn::Net net;                     /// The neural network
     std::vector<std::string> class_names; /// All the object classes
 
-    float confidence_threshold; /// Minimum it takes to consider an object detected todo: move those to the function, they are not needed here
+    float confidence_threshold; /// Minimum it takes to consider an object detected
     float score_threshold;      /// Minimum class score
     float nms_threshold;        /// Non-maximum suppression threshold
 
     bool draw_bounding_boxes = true;
 
+    int resolution = 480;
     int call_count = 0;
 
     ObjectDetector::Object last_detection = ObjectDetector::Object::NONE;

@@ -9,31 +9,49 @@
 class FrameProcessor
 {
     public:
-    FrameProcessor(Capture& cap); // Passed by reference as we will alter the frame
+
+    /**
+     * @brief Constructor: Initializes the frame processor.
+     * @param cap The capture object.
+     */
+    FrameProcessor(Capture& cap);
     ~FrameProcessor();
 
+    /**
+     * @brief Process the frame.
+     * @param frame The frame to process.
+     */
     void ProcessFrame(cv::Mat& frame);
+
+    /**
+     * @brief Render the frame.
+     * @return Whether the frame was rendered successfully or if the program should exit.
+     */
     bool RenderFrame();
 
-    // For future flexibility, allow the motion detector to be altered at runtime
+    /// For future flexibility, allow the motion and object detectors to be altered at runtime
+    /**
+     * @brief Set the motion detector.
+     * @param detector The motion detector.
+     */
     void SetMotionDetector(std::unique_ptr<MotionDetector> detector);
+    /**
+     * @brief Set the object detector.
+     * @param detector The object detector.
+     */
     void SetObjectDetector(std::unique_ptr<ObjectDetector> detector);
 
     private:
-    std::unique_ptr<MotionDetector> motion_detector;
-    std::unique_ptr<ObjectDetector> object_detector;
+    std::unique_ptr<MotionDetector> motion_detector;   /// The motion detector
+    std::unique_ptr<ObjectDetector> object_detector;   /// The object detector
 
-    OpenGuard::Utils::StateTracker motion_state;
-    OpenGuard::Utils::StateTracker object_state;
+    OpenGuard::Utils::StateTracker motion_state;       /// [MaybeUnused] The previous motion state
 
-    std::shared_ptr<OverlayRenderer> overlay_renderer;
+    std::shared_ptr<OverlayRenderer> overlay_renderer; /// The overlay renderer for this frame
 
-    cv::Mat processed_frame;
-    Capture& cap;
-    std::unique_ptr<Recorder> recorder;
-
-    bool draw_fps = false;
-    bool draw_overlay = false;
+    cv::Mat processed_frame;                           /// The processed frame
+    Capture& cap;                                      /// The capture object
+    std::unique_ptr<Recorder> recorder;                /// Recorder instance
 };
 
 

@@ -12,29 +12,32 @@
  *
  */
 
-//todo: experiment with yolov5n instead of yolov5s
-//todo: yoloV8 +focus only few classes when exporting model
 
 /**
  * @brief Constructor: Initializes YOLOv5 detector.
  */
 YOLODetector::YOLODetector()
 {
-    // Load YOLOv5 model
-    net = cv::dnn::readNetFromONNX(ConfigManager::GetInstance().GetConfig<std::string>("model_path"));
+    /// Load YOLOv5 model
+    net = cv::dnn::readNetFromONNX(ConfigManager::GetInstance().GetConfig<std::string>("yolo_model_path"));
+
     if (net.empty())
     {
+        Logger::GetInstance().Log("FATAL", "Could not load YOLOv5 model.");
         throw std::runtime_error("Could not load YOLOv5 model.");
     }
 
-    // Load class names
-    LoadClassNames(ConfigManager::GetInstance().GetConfig<std::string>("classes_path"));
+    /// Load class names
+    LoadClassNames(ConfigManager::GetInstance().GetConfig<std::string>("yolo_classes_path"));
 
-    // Read detection thresholds
-    confidence_threshold = ConfigManager::GetInstance().GetConfig<float>("confidence_threshold");
-    score_threshold = ConfigManager::GetInstance().GetConfig<float>("score_threshold");
-    nms_threshold = ConfigManager::GetInstance().GetConfig<float>("nms_threshold");
-    // Set preferable backend & target (CPU or CUDA if available)
+    /// Read detection thresholds
+    confidence_threshold = ConfigManager::GetInstance().GetConfig<float>("yolo_confidence_threshold");
+    score_threshold = ConfigManager::GetInstance().GetConfig<float>("yolo_score_threshold");
+    resolution = ConfigManager::GetInstance().GetConfig<int>("yolo_resolution");
+
+    nms_threshold = 0.45; /// Decided against exposing this to the user as it may not be intuitive
+
+    /// Set preferable backend & target (CPU or CUDA if available)
     setHardwareAcceleration(ConfigManager::GetInstance().GetConfig<int>("use_gpu"));
 }
 
@@ -87,7 +90,8 @@ void YOLODetector::setDrawBoundingBoxes(bool draw)
 cv::Mat YOLODetector::PreProcess(const cv::Mat &frame)
 {
     cv::Mat resized;
-    cv::resize(frame, resized, cv::Size(480, 480)); // Ensuring correct YOLOv5 input size
+    /// Resize frame, making it square
+    cv::resize(frame, resized, cv::Size(yolo_resolution, yolo_resolution));
     return resized;
 }
 
@@ -104,8 +108,6 @@ void YOLODetector::DrawBoundingBoxes(cv::Mat &frame, const YOLODetector::Detecti
 
         overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::RECTANGLE, box, cv::Scalar(0, 255, 0), 2, true));
         overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, label, cv::Point(box.x,box.y - 10), cv::Scalar(0, 255, 0), 2, true, cv::FONT_HERSHEY_SIMPLEX, true));
-
-
     }
 }
 
@@ -115,45 +117,44 @@ void YOLODetector::DrawBoundingBoxes(cv::Mat &frame, const YOLODetector::Detecti
 YOLODetector::DetectionResult YOLODetector::PostProcess(const cv::Mat& frame, const std::vector<cv::Mat>& outputs)
 {
     std::vector<cv::Rect> boxes;
-    std::vector<int> classIds;
+    std::vector<int> class_ids;
     std::vector<float> confidences;
 
-    float x_factor = static_cast<float>(frame.cols) / 480;
-    float y_factor = static_cast<float>(frame.rows) / 480;
+    static float x_factor = static_cast<float>(frame.cols) / this->resolution;
+    static float y_factor = static_cast<float>(frame.rows) / this->resolution;
 
     if (outputs.empty())
-    {
-
         return {};
-    }
 
     cv::Mat output = outputs[0];
 
     if (output.empty())
     {
-       Logger::GetInstance().Log("ERROR", "YOLO output is empty.");
+        Logger::GetInstance().Log("ERROR", "YOLO output is empty.");
         return {};
     }
 
-    // Ensure correct reshaping (if the output is 3D, reshape to 2D)
+    /// Ensure correct reshaping (if the output is 3D, reshape to 2D)
     if (output.dims == 3 && output.size[0] == 1)
         output = output.reshape(1, output.size[1]);
 
     for (int i = 0; i < output.rows; i++)
     {
-        // Extract bounding box coordinates
+        /// Extract bounding box coordinates
         float confidence = output.at<float>(i, 4);
         if (confidence > confidence_threshold)
         {
-            //
+            /// Extract class scores
             cv::Mat scores = output.row(i).colRange(5, output.cols);
             cv::Point class_id_point;
             double max_class_score;
+
             cv::minMaxLoc(scores, nullptr, &max_class_score, nullptr, &class_id_point);
 
-            // Proceed if class score is above threshold
+            /// Proceed if class score is above threshold
             if (max_class_score > score_threshold)
             {
+                /// Check if the class is record worthy, if not we omit it
                 static std::unordered_set<std::string> record_worthy = ConfigManager::GetInstance().GetConfig<std::unordered_set<std::string>>("record_worthy");
 
                 std::string class_name = class_names[class_id_point.x];
@@ -161,20 +162,21 @@ YOLODetector::DetectionResult YOLODetector::PostProcess(const cv::Mat& frame, co
                 if (record_worthy.find(class_name) == record_worthy.end())
                     continue;
 
-                //center x, center y, width, height
+                /// center x, center y, width, height
                 float cx = output.at<float>(i, 0);
                 float cy = output.at<float>(i, 1);
                 float w = output.at<float>(i, 2);
                 float h = output.at<float>(i, 3);
 
-                // Convert to pixel coordinates, multiply by factor to scale to original frame size
+                /// Convert to pixel coordinates, multiply by factor to scale to original frame size
                 int left = std::max(0, static_cast<int>((cx - 0.5f * w) * x_factor));
                 int top = std::max(0, static_cast<int>((cy - 0.5f * h) * y_factor));
 
-                // Ensure bounding box is within frame
+                /// Ensure bounding box is within frame
                 int width = std::min(static_cast<int>(w * x_factor), frame.cols - left);
                 int height = std::min(static_cast<int>(h * y_factor), frame.rows - top);
 
+                /// Add bounding box to list
                 boxes.emplace_back(left, top, width, height);
                 confidences.push_back(static_cast<float>(max_class_score));
                 classIds.push_back(class_id_point.x);
@@ -182,13 +184,13 @@ YOLODetector::DetectionResult YOLODetector::PostProcess(const cv::Mat& frame, co
         }
     }
 
-    // Apply Non-Maximum Suppression (NMS)
+    /// Apply Non-Maximum Suppression (NMS)
     std::vector<int> indices;
     cv::dnn::NMSBoxes(boxes, confidences, score_threshold, nms_threshold, indices);
 
     DetectionResult result;
-    //todo: fix persistant overlay
-    // NMS removes the boxes with lower confidence, so we only keep the ones that are left
+
+    /// NMS removes the boxes with lower confidence, so we only keep the ones that are left
     for (int idx : indices)
     {
         if (idx >= boxes.size())
@@ -198,7 +200,7 @@ YOLODetector::DetectionResult YOLODetector::PostProcess(const cv::Mat& frame, co
         }
 
         result.boxes.push_back(boxes[idx]);
-        result.class_ids.push_back(classIds[idx]);
+        result.class_ids.push_back(class_ids[idx]);
         result.confidences.push_back(confidences[idx]);
     }
 
@@ -216,11 +218,11 @@ ObjectDetector::Object YOLODetector::Detect(const cv::Mat &frame)
     if (call_count++ % call_freq != 0)
         return last_detection;
 
-    // Preprocess the frame
+    /// Preprocess the frame
     cv::Mat resized = PreProcess(frame);
     cv::Mat blob = cv::dnn::blobFromImage(resized, 1 / 255.0, cv::Size(640, 640), cv::Scalar(), true, false);
 
-    // Ensure network input is valid
+    /// Ensure network input is valid
     if (blob.empty())
     {
         Logger::GetInstance().Log("ERROR", "YOLO blob is empty.");
@@ -229,6 +231,8 @@ ObjectDetector::Object YOLODetector::Detect(const cv::Mat &frame)
 
     net.setInput(blob);
     std::vector<cv::Mat> outputs;
+
+    /// Forward pass
     net.forward(outputs, net.getUnconnectedOutLayersNames());
 
     if (outputs.empty())
@@ -237,8 +241,10 @@ ObjectDetector::Object YOLODetector::Detect(const cv::Mat &frame)
         return Object::NONE;
     }
 
+    /// Post-process the output
     DetectionResult result = PostProcess(frame, outputs);
 
+    /// Draw bounding boxes if enabled
     if (this->draw_bounding_boxes)
     {
         overlay_renderer->InvalidatePersistent();
@@ -247,14 +253,12 @@ ObjectDetector::Object YOLODetector::Detect(const cv::Mat &frame)
 
     std::string detected_object;
 
+    /// If we have a detection, we take the first one
     if (result.class_ids.size() > 0)
         detected_object = class_names[result.class_ids[0]];
 
-    //this->detection_count++;
-
+    /// Convert the detected object to an enum
     last_detection = ObjectDetector::GetObjectFromString(detected_object);
-
-
 
     return last_detection;
 }
