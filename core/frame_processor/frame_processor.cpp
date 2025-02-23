@@ -10,7 +10,7 @@
 FrameProcessor::FrameProcessor(Capture& cap) : cap(cap)
 {
     this->overlay_renderer = std::make_shared<OverlayRenderer>(cap);
-    this->recorder = std::make_unique<Recorder>(cap.GetFrameSize(), 15);
+    this->recorder = std::make_unique<Recorder>(cap.GetFrameSize());
 }
 
 FrameProcessor::~FrameProcessor()

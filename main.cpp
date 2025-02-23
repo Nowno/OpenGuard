@@ -10,9 +10,9 @@ int main()
     Logger::GetInstance().Log("INFO", "Application started.");
 
     /// Set up capture
-    Capture cap(ConfigManager::GetInstance().GetConfig<int>("capture_width"),
-                ConfigManager::GetInstance().GetConfig<int>("capture_height"),
-                ConfigManager::GetInstance().GetConfig<int>("capture_fps"));
+    Capture cap(ConfigManager::GetInstance().GetConfig<int>("frame_width"),
+                ConfigManager::GetInstance().GetConfig<int>("frame_height"),
+                ConfigManager::GetInstance().GetConfig<int>("frame_rate"));
 
     /// Set up detectors
     auto motion_detector = std::make_unique<MOG2Detector>();

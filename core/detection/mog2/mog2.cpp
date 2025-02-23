@@ -6,10 +6,9 @@ MOG2Detector::MOG2Detector()
 {
     int width = ConfigManager::GetInstance().GetConfig<int>("frame_width");
     int height = ConfigManager::GetInstance().GetConfig<int>("frame_width");
-    float motion_threshold = ConfigManager::GetInstance().GetConfig<float>("motion_threshold");
 
     /// Calculate the motion threshold based on the number of pixels
-    this->motion_threshold =  width * height * motion_threshold;
+    this->motion_threshold =  width * height * (ConfigManager::GetInstance().GetConfig<float>("mog2_motion_threshold") / 100.0f);
 
     /// Number of frames to ignore
     this->initialization_frames = ConfigManager::GetInstance().GetConfig<int>("frame_rate") * 2;

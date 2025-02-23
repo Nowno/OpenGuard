@@ -38,7 +38,7 @@ YOLODetector::YOLODetector()
     nms_threshold = 0.45; /// Decided against exposing this to the user as it may not be intuitive
 
     /// Set preferable backend & target (CPU or CUDA if available)
-    setHardwareAcceleration(ConfigManager::GetInstance().GetConfig<int>("use_gpu"));
+    setHardwareAcceleration(ConfigManager::GetInstance().GetConfig<bool>("use_gpu"));
 }
 
 /**
@@ -91,7 +91,7 @@ cv::Mat YOLODetector::PreProcess(const cv::Mat &frame)
 {
     cv::Mat resized;
     /// Resize frame, making it square
-    cv::resize(frame, resized, cv::Size(yolo_resolution, yolo_resolution));
+    cv::resize(frame, resized, cv::Size(resolution, resolution));
     return resized;
 }
 
@@ -120,8 +120,8 @@ YOLODetector::DetectionResult YOLODetector::PostProcess(const cv::Mat& frame, co
     std::vector<int> class_ids;
     std::vector<float> confidences;
 
-    static float x_factor = static_cast<float>(frame.cols) / this->resolution;
-    static float y_factor = static_cast<float>(frame.rows) / this->resolution;
+    float x_factor = static_cast<float>(frame.cols) / this->resolution;
+    float y_factor = static_cast<float>(frame.rows) / this->resolution;
 
     if (outputs.empty())
         return {};
@@ -179,7 +179,7 @@ YOLODetector::DetectionResult YOLODetector::PostProcess(const cv::Mat& frame, co
                 /// Add bounding box to list
                 boxes.emplace_back(left, top, width, height);
                 confidences.push_back(static_cast<float>(max_class_score));
-                classIds.push_back(class_id_point.x);
+                class_ids.push_back(class_id_point.x);
             }
         }
     }

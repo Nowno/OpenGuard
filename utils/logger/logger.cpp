@@ -1,5 +1,4 @@
 #include "logger.hpp"
-#include "../utils.hpp"
 #include "../configs/user_config.hpp"
 #include "../../core/hook_manager/hook_manager.hpp"
 #include <iostream>

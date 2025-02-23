@@ -1,7 +1,7 @@
 #ifndef OPENGUARD_UTILS_HPP
 #define OPENGUARD_UTILS_HPP
 
-#endif //OPENGUARD_UTILS_HPP
+
 #include <string>
 #include <fstream>
 #include <vector>
@@ -172,3 +172,5 @@ namespace OpenGuard::Utils
 }
 
 using OpenGuard::Utils::Vec2;
+
+#endif //OPENGUARD_UTILS_HPP

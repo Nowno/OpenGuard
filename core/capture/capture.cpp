@@ -110,12 +110,14 @@ void Capture::Update()
     /// Not as accurate as it can be but good enough, get the amount of frames there has been in a second
     if (this->fps_timer.HasElapsed(1.0))
     {
+        static int frame_rate = ConfigManager::GetInstance().GetConfig<int>("frame_rate");
+
         this->fps = frame_count;
         this->frame_count = 0;
         this->fps_timer.Reset();
 
         /// Added this as some cameras may run at a lower frame rate as they make up for low light conditions
-        if (this->fps < ConfigManager::GetInstance().GetConfig<int>("capture_fps") - 7)
+        if (this->fps < frame_rate - 7)
         {
             Logger::GetInstance().Log("WARNING", "System running below target FPS.");
         }
