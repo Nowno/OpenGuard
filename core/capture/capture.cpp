@@ -111,15 +111,17 @@ void Capture::Update()
     if (this->fps_timer.HasElapsed(1.0))
     {
         static int frame_rate = ConfigManager::GetInstance().GetConfig<int>("frame_rate");
+        static int warn_count = 0;
 
         this->fps = frame_count;
         this->frame_count = 0;
         this->fps_timer.Reset();
 
         /// Added this as some cameras may run at a lower frame rate as they make up for low light conditions
-        if (this->fps < frame_rate - 7)
+        if (this->fps < frame_rate - 7 && warn_count < 5)
         {
             Logger::GetInstance().Log("WARNING", "System running below target FPS.");
+            warn_count++;
         }
     }
 }
