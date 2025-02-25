@@ -1,11 +1,13 @@
 #ifndef OPENGUARD_YOLO_HPP
 #define OPENGUARD_YOLO_HPP
 
-#include "../object_detector.hpp"
 #include <opencv2/dnn.hpp>
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <string>
+
+#include "../object_detector.hpp"
+#include "../../../utils/worker_thread/worker_thread.hpp"
 
 class YOLODetector : public ObjectDetector
 {
@@ -52,7 +54,8 @@ class YOLODetector : public ObjectDetector
 
     bool draw_bounding_boxes = true;
 
-    int resolution = 480;
+    int yolo_resolution = 480;
+    int width = 0;
     int call_count = 0;
 
     ObjectDetector::Object last_detection = ObjectDetector::Object::NONE;

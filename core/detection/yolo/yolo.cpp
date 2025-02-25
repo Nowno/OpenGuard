@@ -33,7 +33,7 @@ YOLODetector::YOLODetector()
     /// Read detection thresholds
     confidence_threshold = ConfigManager::GetInstance().GetConfig<float>("yolo_confidence_threshold");
     score_threshold = ConfigManager::GetInstance().GetConfig<float>("yolo_score_threshold");
-    resolution = ConfigManager::GetInstance().GetConfig<int>("yolo_resolution");
+    yolo_resolution = ConfigManager::GetInstance().GetConfig<int>("yolo_resolution");
 
     nms_threshold = 0.45; /// Decided against exposing this to the user as it may not be intuitive
 
@@ -64,13 +64,18 @@ void YOLODetector::LoadClassNames(const std::string &classesPath)
  */
 void YOLODetector::setHardwareAcceleration(bool use_gpu)
 {
-    if (use_gpu)
+    if (use_gpu && cv::cuda::getCudaEnabledDeviceCount() > 0)
     {
         net.setPreferableBackend(cv::dnn::DNN_BACKEND_CUDA);
         net.setPreferableTarget(cv::dnn::DNN_TARGET_CUDA);
     }
     else
     {
+        if (use_gpu)
+        {
+            Logger::GetInstance().Log("WARNING", "CUDA not available, falling back to CPU.");
+        }
+
         net.setPreferableBackend(cv::dnn::DNN_BACKEND_OPENCV);
         net.setPreferableTarget(cv::dnn::DNN_TARGET_CPU);
     }
@@ -89,15 +94,19 @@ void YOLODetector::setDrawBoundingBoxes(bool draw)
  */
 cv::Mat YOLODetector::PreProcess(const cv::Mat &frame)
 {
-    cv::Mat resized;
-    /// Resize frame, making it square
-    cv::resize(frame, resized, cv::Size(resolution, resolution));
-    return resized;
+    int max_dim = std::max(frame.cols, frame.rows);
+    cv::Mat padded;
+
+    /// To avoid deforming the image, pad it to a square.
+    cv::copyMakeBorder(frame, padded, (max_dim - frame.rows) / 2, (max_dim - frame.rows) / 2, (max_dim - frame.cols) / 2, (max_dim - frame.cols) / 2, cv::BORDER_CONSTANT, cv::Scalar(0, 0, 0));
+    cv::resize(padded, padded, cv::Size(yolo_resolution, yolo_resolution));
+
+    return padded;
 }
 
 void YOLODetector::DrawBoundingBoxes(cv::Mat &frame, const YOLODetector::DetectionResult &result)
 {
-    // Draw detections on frame
+    /// Draw detections on frame
     for (size_t i = 0; i < result.boxes.size(); i++)
     {
         cv::Rect box = result.boxes[i];
@@ -120,8 +129,8 @@ YOLODetector::DetectionResult YOLODetector::PostProcess(const cv::Mat& frame, co
     std::vector<int> class_ids;
     std::vector<float> confidences;
 
-    float x_factor = static_cast<float>(frame.cols) / this->resolution;
-    float y_factor = static_cast<float>(frame.rows) / this->resolution;
+    float x_factor = static_cast<float>(frame.cols) / yolo_resolution;
+    float y_factor = static_cast<float>(frame.rows) / yolo_resolution;
 
     if (outputs.empty())
         return {};
@@ -220,7 +229,7 @@ ObjectDetector::Object YOLODetector::Detect(const cv::Mat &frame)
 
     /// Preprocess the frame
     cv::Mat resized = PreProcess(frame);
-    cv::Mat blob = cv::dnn::blobFromImage(resized, 1 / 255.0, cv::Size(640, 640), cv::Scalar(), true, false);
+    cv::Mat blob = cv::dnn::blobFromImage(resized, 1 / 255.0, cv::Size(yolo_resolution, yolo_resolution), cv::Scalar(0, 0, 0), true, false);
 
     /// Ensure network input is valid
     if (blob.empty())

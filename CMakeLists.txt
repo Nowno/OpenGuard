@@ -35,6 +35,8 @@ add_executable(OpenGuard main.cpp
         core/hook_manager/hook_manager.cpp
         core/hook_manager/hook_manager.hpp
         core/openguard.hpp
+        utils/worker_thread/worker_thread.tpp
+        utils/worker_thread/worker_thread.hpp
 )
 
 
