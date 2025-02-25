@@ -11,19 +11,9 @@
 
 class YOLODetector : public ObjectDetector
 {
-    /**
-  * @brief Struct to simplify storing detection results.
-  */
-    struct DetectionResult
-    {
-        std::vector<cv::Rect> boxes;    /// Boundind boxes of detected objects.
-        std::vector<int> class_ids;     /// Class IDs of detected objects.
-        std::vector<float> confidences; /// Confidence for each detected object.
-    };
-
     public:
     YOLODetector();
-    ~YOLODetector() override = default;
+    ~YOLODetector();
 
     /**
      * @brief Detect objects in a frame.
@@ -45,6 +35,16 @@ class YOLODetector : public ObjectDetector
     void setDrawBoundingBoxes(bool draw);
 
     private:
+    /**
+    * @brief Struct to simplify storing detection results.
+    */
+    struct DetectionResult
+    {
+        std::vector<cv::Rect> boxes;    /// Boundind boxes of detected objects.
+        std::vector<int> class_ids;     /// Class IDs of detected objects.
+        std::vector<float> confidences; /// Confidence for each detected object.
+    };
+
     cv::dnn::Net net;                     /// The neural network
     std::vector<std::string> class_names; /// All the object classes
 
@@ -54,11 +54,19 @@ class YOLODetector : public ObjectDetector
 
     bool draw_bounding_boxes = true;
 
-    int yolo_resolution = 480;
-    int width = 0;
-    int call_count = 0;
+    int yolo_resolution;
+    int width;
+    int call_count;
 
-    ObjectDetector::Object last_detection = ObjectDetector::Object::NONE;
+    std::unique_ptr<WorkerThread<cv::Mat, DetectionResult>> worker_thread; /// Worker thread to run detection on
+    Object last_detection;
+    std::mutex detection_mutex;                                            /// Mutex to protect the detection result
+
+
+    bool RetrieveInferenceResults(DetectionResult& result);
+
+    DetectionResult RunInference(const cv::Mat& frame);
+
     /**
      * @brief Load class names from a file.
      * @param classesPath The path to the file containing the class names.
@@ -83,10 +91,10 @@ class YOLODetector : public ObjectDetector
 
     /**
      * @brief Draw bounding boxes on the frame.
-     * @param frame The input image.
      * @param result The detection result.
      */
-    void DrawBoundingBoxes(cv::Mat& frame, const DetectionResult& result);
+    void DrawBoundingBoxes(const DetectionResult& result);
+
 
 };
 

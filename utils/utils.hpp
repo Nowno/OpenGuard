@@ -113,6 +113,9 @@ namespace OpenGuard::Utils
         return std::string(buffer);
     }
 
+    //Add safe-call function
+    //Add proper sysytem call function
+
     /**
      * @brief Simple state tracker to avoid making static duplicates etc to check the previous state.
      */

@@ -39,6 +39,23 @@ YOLODetector::YOLODetector()
 
     /// Set preferable backend & target (CPU or CUDA if available)
     setHardwareAcceleration(ConfigManager::GetInstance().GetConfig<bool>("use_gpu"));
+
+    worker_thread = std::make_unique<WorkerThread<cv::Mat, DetectionResult>>
+            ([this](const cv::Mat &frame) -> DetectionResult
+             {
+                 return RunInference(frame);
+             });
+
+    worker_thread->Start();
+}
+
+/**
+ * @brief Destructor: Joins worker thread to avoid leaks
+ */
+YOLODetector::~YOLODetector()
+{
+    if (worker_thread)
+        worker_thread->Stop();
 }
 
 /**
@@ -104,7 +121,7 @@ cv::Mat YOLODetector::PreProcess(const cv::Mat &frame)
     return padded;
 }
 
-void YOLODetector::DrawBoundingBoxes(cv::Mat &frame, const YOLODetector::DetectionResult &result)
+void YOLODetector::DrawBoundingBoxes(const YOLODetector::DetectionResult &result)
 {
     /// Draw detections on frame
     for (size_t i = 0; i < result.boxes.size(); i++)
@@ -133,7 +150,10 @@ YOLODetector::DetectionResult YOLODetector::PostProcess(const cv::Mat& frame, co
     float y_factor = static_cast<float>(frame.rows) / yolo_resolution;
 
     if (outputs.empty())
+    {
+        Logger::GetInstance().Log("ERROR", "PostProcess received empty outputs.");
         return {};
+    }
 
     cv::Mat output = outputs[0];
 
@@ -163,12 +183,12 @@ YOLODetector::DetectionResult YOLODetector::PostProcess(const cv::Mat& frame, co
             /// Proceed if class score is above threshold
             if (max_class_score > score_threshold)
             {
-                /// Check if the class is record worthy, if not we omit it
-                static std::unordered_set<std::string> record_worthy = ConfigManager::GetInstance().GetConfig<std::unordered_set<std::string>>("record_worthy");
+                /// Check if the class is supported, omit it otherwise.
+                const static std::unordered_set<std::string> supported_classes = {"person", "car", "truck", "cat", "dog"};
 
                 std::string class_name = class_names[class_id_point.x];
 
-                if (record_worthy.find(class_name) == record_worthy.end())
+                if (supported_classes.find(class_name) == supported_classes.end())
                     continue;
 
                 /// center x, center y, width, height
@@ -217,16 +237,18 @@ YOLODetector::DetectionResult YOLODetector::PostProcess(const cv::Mat& frame, co
 }
 
 
-/**
- * @brief Runs YOLO detection on a given frame.
- */
-ObjectDetector::Object YOLODetector::Detect(const cv::Mat &frame)
+bool YOLODetector::RetrieveInferenceResults(YOLODetector::DetectionResult &result)
 {
-    static int call_freq = ConfigManager::GetInstance().GetConfig<int>("object_detection_frequency");
+    std::lock_guard<std::mutex> lock(detection_mutex);
 
-    if (call_count++ % call_freq != 0)
-        return last_detection;
+    if (worker_thread->GetResult(result))
+        return true;
 
+    return false;
+}
+
+YOLODetector::DetectionResult YOLODetector::RunInference(const cv::Mat &frame)
+{
     /// Preprocess the frame
     cv::Mat resized = PreProcess(frame);
     cv::Mat blob = cv::dnn::blobFromImage(resized, 1 / 255.0, cv::Size(yolo_resolution, yolo_resolution), cv::Scalar(0, 0, 0), true, false);
@@ -235,7 +257,7 @@ ObjectDetector::Object YOLODetector::Detect(const cv::Mat &frame)
     if (blob.empty())
     {
         Logger::GetInstance().Log("ERROR", "YOLO blob is empty.");
-        return Object::NONE;
+        return {};
     }
 
     net.setInput(blob);
@@ -247,27 +269,58 @@ ObjectDetector::Object YOLODetector::Detect(const cv::Mat &frame)
     if (outputs.empty())
     {
         Logger::GetInstance().Log("ERROR", "YOLO outputs are empty.");
-        return Object::NONE;
+        return {};
     }
 
-    /// Post-process the output
-    DetectionResult result = PostProcess(frame, outputs);
+    /// Post-process the output, extract detections and return them
+    return PostProcess(frame, outputs);
+}
 
-    /// Draw bounding boxes if enabled
-    if (this->draw_bounding_boxes)
+/**
+ * @brief Runs YOLO detection on a given frame.
+ */
+
+ObjectDetector::Object YOLODetector::Detect(const cv::Mat &frame)
+{
+    static int call_freq = ConfigManager::GetInstance().GetConfig<int>("object_detection_frequency");
+
+    if (call_freq > 1 && call_count++ % call_freq != 0)
+        return last_detection;
+
+    /// If the queue is full, don't add more jobs to avoid delaying the detection too much
     {
-        overlay_renderer->InvalidatePersistent();
-        DrawBoundingBoxes(const_cast<cv::Mat &>(frame), result);
+        std::lock_guard<std::mutex> lock(detection_mutex);
+        if (worker_thread->GetQueueSize() > 5)
+            return last_detection;
+
+        worker_thread->AddJob(frame.clone());
     }
 
-    std::string detected_object;
+    DetectionResult result; /// Will hold with the inference results
 
-    /// If we have a detection, we take the first one
-    if (result.class_ids.size() > 0)
-        detected_object = class_names[result.class_ids[0]];
+    if (RetrieveInferenceResults(result))
+    {
+        std::lock_guard<std::mutex> lock(detection_mutex);
 
-    /// Convert the detected object to an enum
-    last_detection = ObjectDetector::GetObjectFromString(detected_object);
+        if (!result.class_ids.empty()) /// Make sure something was written to the result
+        {
+            last_detection = ObjectDetector::GetObjectFromString(class_names[result.class_ids[0]]);
+
+            if (this->draw_bounding_boxes)
+            {
+                overlay_renderer->InvalidatePersistent();
+                DrawBoundingBoxes(result);
+            }
+        }
+        else
+        {
+            last_detection = ObjectDetector::Object::NONE;
+        }
+    }
+    else
+    {
+        last_detection = ObjectDetector::Object::NONE;
+    }
 
     return last_detection;
 }

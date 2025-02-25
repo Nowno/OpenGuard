@@ -77,11 +77,13 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
         /// Run object detection
         object_detected = object_detector->Detect(frame);
 
+
         if (object_detected != ObjectDetector::Object::NONE)
         {
             /// Again, to avoid spamming the logs, only log if we haven't started recording yet
             if (!recorder->IsRecording())
                 HookManager::GetInstance().ExecuteHooks("on_object", {{"object", ObjectDetector::GetObjectString(object_detected)}});
+            Logger::GetInstance().Log("INFO", "Object detected: " + ObjectDetector::GetObjectString(object_detected));
         }
         else
         {

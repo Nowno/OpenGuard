@@ -11,7 +11,7 @@ template <typename J, typename R>
 class WorkerThread
 {
     public:
-    using Job = std::function<void()>;
+    using Job = std::function<R(const J&)>;
     WorkerThread(Job job);
     ~WorkerThread();
 
@@ -20,19 +20,23 @@ class WorkerThread
 
     void AddJob(const J& job);
     bool GetResult(R& result);
+    size_t GetQueueSize();
 
     private:
     void Worker();
 
     std::thread worker_thread;
 
-    std::queue<J> jobs;
-    std::queue<R> results;
+    std::queue<J> jobs_queue;
+    std::queue<R> results_queue;
     std::mutex queues_mutex;
 
     std::condition_variable queue_cv;
 
     std::atomic<bool> running;
+
+    // The last result
+    std::optional<R> last_result;
 
     Job job;
 };
