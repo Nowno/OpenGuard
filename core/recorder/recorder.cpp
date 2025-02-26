@@ -165,7 +165,8 @@ void Recorder::ConvertToMP4(const std::string& file, ObjectDetector::Object obje
     if (ret == 0)
     {
         Logger::GetInstance().Log("INFO", "Conversion successful.");
-        std::filesystem::remove(file);
+        if (!std::filesystem::remove(file))
+            Logger::GetInstance().Log("ERROR", "Could not delete " + file);
     }
     else
     {

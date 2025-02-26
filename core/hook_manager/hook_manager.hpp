@@ -20,7 +20,7 @@ class HookManager
     {
         /// Constructors for both native and external hooks
         Hook(HookType type, const std::function<int(const std::unordered_map<std::string, std::string>& args)>& callback, bool blocking = false, int cooldown = 0) : type(type), callback(callback), blocking(blocking), cooldown(cooldown) {}
-        Hook(HookType type, const std::string& scriptPath, bool blocking = false, int cooldown = 0) : type(type), script_path(scriptPath), blocking(blocking), cooldown(cooldown) {}
+        Hook(HookType type, const std::string& _script_path, bool blocking = false, int cooldown = 0) : type(type), script_path(_script_path), blocking(blocking), cooldown(cooldown) {}
 
         HookType type;
         std::function<int(const std::unordered_map<std::string, std::string>& args)> callback; /// Exclusive to native hooks
@@ -41,14 +41,14 @@ class HookManager
      * @brief Bulk register external hooks in a given directory.
      * @param hook_path The path to the directory containing the hooks.
      */
-    void RegisterHooks(const std::string& hook_path);
+    void RegisterHooks(const std::string& hook_folder);
 
     /**
      * @brief Individual registers a hook.
      * @param hook_name The name of the hook.
      * @param hook The hook to register.
      */
-    void RegisterHook(const std::string& hook_name, const Hook& hook);
+    void RegisterHook(const std::string& event_name, const Hook& hook);
 
     /**
      * @brief Execute hooks for a given event.
@@ -58,10 +58,11 @@ class HookManager
     void ExecuteHooks(const std::string& event, std::unordered_map<std::string, std::string> args);
 
     private:
-    std::unordered_map<std::string, std::vector<Hook>> hooks; /// Hook table
-    std::unordered_map<std::string, int> hook_outputs;        /// Output of hooks (used for blocking hooks)
-    std::mutex hook_mutex;                                    /// Mutex for hooks operations
-    std::mutex output_mutex;                                  /// Mutex for hook_outputs operations
+    std::unordered_map<std::string, std::vector<Hook>> hooks;  /// Hook table
+    std::unordered_map<std::string, std::string> hook_outputs; /// Output of hooks (used for blocking hooks)
+    std::unordered_map<std::string, std::string> header_cache; /// Cache for hook headers to avoid reading the same file multiple times
+    std::mutex hook_mutex;                                     /// Mutex for hooks operations
+    std::mutex output_mutex;                                   /// Mutex for hook_outputs operations
 
     /// Private constructor for singleton pattern
     HookManager() = default;
@@ -88,8 +89,6 @@ class HookManager
      * @return The cooldown of the hook (if the first line contains "cooldown", if so extract the value).
      */
     int GetCooldown(const std::string& hook_path);
-
-
 
 };
 

@@ -113,8 +113,42 @@ namespace OpenGuard::Utils
         return std::string(buffer);
     }
 
-    //Add safe-call function
-    //Add proper sysytem call function
+
+    /**
+     * @brief Execute a shell command and return the output.
+     * @param command The command to execute
+     * @return The output of the command.
+     */
+    inline std::string ExecuteCommand(const std::string& command)
+    {
+        /// Allocate a buffer for the output
+        std::array<char, 128> buffer;
+
+
+        /// Create a pipe to read the output of the command
+        #ifdef _WIN32
+            std::unique_ptr<FILE, decltype(&_pclose)> pipe(_popen(command.c_str(), "r"), _pclose);
+        #else
+            std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
+        #endif
+
+        /// This really shouldn't happen, but just in case throw an error
+        if (!pipe)
+        {
+            throw std::runtime_error("FATAL: popen() failed!");
+        }
+
+        std::string return_value;
+
+        /// Read the output of the command and append it to the return value
+        while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
+        {
+            return_value += buffer.data();
+        }
+
+        return return_value;
+    }
+
 
     /**
      * @brief Simple state tracker to avoid making static duplicates etc to check the previous state.

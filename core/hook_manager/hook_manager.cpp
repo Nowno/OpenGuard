@@ -76,11 +76,18 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
     /// Edge case for on_hook event
     for (const Hook& on_hook : hooks["on_hook"])
     {
-        /// Reserved this hook for native hooks only to avoid performance issues
-        if (on_hook.blocking)
-            on_hook.callback(args);
-        else
-            std::thread(on_hook.callback, args).detach();
+        try
+        {
+            /// Reserved this hook for native hooks only to avoid performance issues
+            if (on_hook.blocking)
+                on_hook.callback(args);
+            else
+                std::thread(on_hook.callback, args).detach();
+        }
+        catch (const std::exception& e)
+        {
+            Logger::GetInstance().Log("ERROR", "Failed to execute on_hook: " + std::string(e.what()));
+        }
     }
 
     for (Hook &hook: hooks[event])
@@ -95,14 +102,18 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
             if (hook.blocking)                                      /// In the case of blocking hooks, execute them synchronously and capture the output
                 this->hook_outputs[event] = hook.callback(args);
             else
-                std::thread(hook.callback, args).detach();       /// For non-blocking we can kind of just run them and forget about them
+                std::thread(hook.callback, args).detach();         /// For non-blocking we can kind of just run them and forget about them
         }
         else if (hook.type == HookType::EXTERNAL)
         {
+            /// Future: For later, maybe have this work with a thread pool or a worker instead.
+            /// For now we're running so few scripts that it doesn't matter that much
+
             /// Same logic as native except we need to handle forming the command to execute the script
             static std::string python_prefix = ConfigManager::GetInstance().GetConfig<std::string>("python_prefix"); /// Prefix for Python scripts as it may vary
 
-            json data = args; /// Convert the args to JSON for easy passing to the script
+            /// Convert the args to JSON for easy passing to the script
+            json data = args;
 
             /// Escape the JSON to ensure it is passed correctly and add it to the command
             std::string command = python_prefix + " " + hook.script_path + " \"" + OpenGuard::Utils::EscapeShell(data.dump()) + "\"";
@@ -110,14 +121,14 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
             if (hook.blocking)
             {
                 /// For blocking hooks, execute them synchronously and capture the output
-                int result = std::system(command.c_str());
+                auto result = OpenGuard::Utils::ExecuteCommand(command);
                 std::lock_guard<std::mutex> lock(hook_mutex);
                 this->hook_outputs[event] = result;
             }
             else
             {
                 /// And as before, fire and forget
-                std::thread([command](){ std::system(command.c_str());}).detach();
+                std::thread([command](){OpenGuard::Utils::ExecuteCommand(command);}).detach();
             }
         }
 
@@ -131,13 +142,24 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
  */
 std::string HookManager::GetHookHeader(const std::string& hook_path)
 {
+    /// If the header is already cached, return it
+    if (header_cache.find(hook_path) != header_cache.end())
+        return header_cache[hook_path];
+
     std::ifstream file(hook_path);
 
     if (!file.is_open())
+    {
+        Logger::GetInstance().Log("ERROR", "Could not open hook: " + hook_path);
         return "";
+    }
 
     std::string line;
-    std::getline(file, line);
+    if (!std::getline(file, line))
+    {
+        Logger::GetInstance().Log("ERROR", "Could not read header for hook: " + hook_path);
+        return "";
+    }
 
     return line; /// Simply return the first line
 }
