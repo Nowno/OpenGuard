@@ -38,7 +38,7 @@ class OpenGuard:
         """ Returns the value of a specific argument """
         return self.data.get(arg, None)
 
-    def send_telegram_alert(self, message):
+    def send_telegram_message(self, message):
         """ Sends a message through Telegram """
         if not OpenGuard.TELEGRAM_TOKEN or not OpenGuard.TELEGRAM_CHAT_ID:
             self.add_output("error", "Telegram not configured properly.")
