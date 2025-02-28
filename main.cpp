@@ -48,11 +48,11 @@ int main()
     {
         auto frame = cap.GetFrame();
 
-        auto motion_hook_output = hook_manager.GetHookOutput("on_motion", "pause");
+        //auto motion_hook_output = hook_manager.GetHookOutput("on_motion", "pause");
 
         /// If the motion hook output is not empty and the cooldown has not expired, skip the frame
-        if (!motion_hook_output.empty() && std::stoi(motion_hook_output) - time(0) > 0)
-            continue;
+        /*if (!motion_hook_output.empty() && std::stoi(motion_hook_output) - time(0) > 0)
+            continue;*/
 
         fp.ProcessFrame(frame);
 

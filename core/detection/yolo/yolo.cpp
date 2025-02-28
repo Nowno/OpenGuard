@@ -290,7 +290,7 @@ ObjectDetector::Object YOLODetector::Detect(const cv::Mat &frame)
     /// If the queue is full, don't add more jobs to avoid delaying the detection too much
     {
         std::lock_guard<std::mutex> lock(detection_mutex);
-        if (worker_thread->GetQueueSize() > 5)
+        if (worker_thread->GetQueueSize() > 6)
             return last_detection;
 
         worker_thread->AddJob(frame.clone());

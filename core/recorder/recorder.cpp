@@ -61,7 +61,11 @@ void Recorder::AddFrame(const cv::Mat& frame, bool motion_detected, ObjectDetect
     if (motion_detected && this->flagged_object != ObjectDetector::Object::NONE)
     {
         if (!recording)
+        {
+
+            Logger::GetInstance().Log("INFO", "Motion detected, object: " + ObjectDetector::GetObjectString(object_detected));
             Start();
+        }
 
         /// Reset the post-record counter
         post_record_counter = post_record_buffer_size;

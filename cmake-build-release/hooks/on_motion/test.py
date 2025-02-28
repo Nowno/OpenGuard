@@ -1,4 +1,7 @@
 ### BLOCKING COOLDOWN 120
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from openguard_api import *
 
 open_guard = OpenGuard()

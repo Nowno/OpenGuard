@@ -1,4 +1,8 @@
 ### COOLDOWN 15
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from openguard_api import *
 
 open_guard = OpenGuard()
@@ -21,8 +25,10 @@ match detected_object:
 
 
 if detected_object:
-    out_message = "🚨 Motion detected at " + open_guard.unix_to_human(open_guard.get_call_time()) + " - " + out_message
+    out_message = "🚨 Motion detected at " + open_guard.unix_to_human(int(open_guard.get_call_time())) + " - " + out_message
 
 open_guard.send_telegram_message(out_message)
+
+open_guard.add_output("success", "true")
 
 open_guard.return_output()

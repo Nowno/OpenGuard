@@ -114,9 +114,10 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
             /// For now we're running so few scripts that it doesn't matter that much
 
             /// Same logic as native except we need to handle forming the command to execute the script
-            static std::string python_prefix = ConfigManager::GetInstance().GetConfig<std::string>("python_prefix"); /// Prefix for Python scripts as it may vary
+            /// Prefix for Python scripts as it may vary
+            static std::string python_prefix = ConfigManager::GetInstance().GetConfig<std::string>("python_prefix");
 
-            /// Convert the args to JSON for easy passing to the script
+            /// If the prefix is empty, assume Python is in the PATH
             json data = args;
 
             /// Escape the JSON to ensure it is passed correctly and add it to the command
@@ -126,16 +127,18 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
             {
                 /// For blocking hooks, execute them synchronously and capture the output
                 auto result = OpenGuard::Utils::ExecuteCommand(command);
-                std::lock_guard<std::mutex> lock(hook_mutex);
+
+                std::lock_guard<std::mutex> lock(output_mutex);
                 this->hook_outputs[event] = AppendOutput(event, result);
             }
             else
             {
                 /// And as before, fire and forget
-                std::thread([&]()
+                std::thread([&, event, command]()
                 {
                     std::string result = OpenGuard::Utils::ExecuteCommand(command);
-                    std::lock_guard<std::mutex> lock(hook_mutex);
+
+                    std::lock_guard<std::mutex> lock(output_mutex);
                     this->hook_outputs[event] = AppendOutput(event, result);
                 }).detach();
             }
@@ -144,6 +147,7 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
         /// Update the last execution time
         hook.last_executed = time(nullptr);
     }
+
 }
 
 /**
@@ -218,6 +222,7 @@ int HookManager::GetCooldown(const std::string& hook_path)
  */
 std::string HookManager::GetHookOutput(const std::string& event, const std::string& key)
 {
+
     std::lock_guard<std::mutex> lock(output_mutex);
 
     if (hook_outputs.find(event) == hook_outputs.end())
@@ -239,13 +244,26 @@ std::string HookManager::AppendOutput(const std::string& event, const std::strin
     if (hook_outputs.find(event) == hook_outputs.end())
         return output;
 
-    json data = json::parse(hook_outputs[event]);
+    if (output.empty())
+        return hook_outputs[event];
 
-    json new_data = json::parse(output);
+    json data;
 
-    for (auto& [key, value] : new_data.items())
+    try
     {
-        data[key] = value;
+        data = json::parse(hook_outputs[event]);
+        json new_data = json::parse(output);
+
+        for (auto &[key, value]: new_data.items())
+        {
+            data[key] = value;
+        }
+    }
+    catch (const std::exception& e)
+    {
+        Logger::GetInstance().Log("ERROR", "Failed to append output: " + std::string(e.what()));
+
+        return hook_outputs[event];
     }
 
     return data.dump();

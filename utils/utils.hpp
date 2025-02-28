@@ -122,7 +122,7 @@ namespace OpenGuard::Utils
     inline std::string ExecuteCommand(const std::string& command)
     {
         /// Allocate a buffer for the output
-        std::array<char, 128> buffer;
+        std::array<char, 256> buffer;
 
 
         /// Create a pipe to read the output of the command
@@ -145,6 +145,13 @@ namespace OpenGuard::Utils
         {
             return_value += buffer.data();
         }
+
+        return_value.erase(return_value.find_last_not_of(" \t\n\r\f\v") + 1);
+
+        if (return_value.empty())
+            return "{}";
+
+        printf("output: %s\n", return_value.c_str());
 
         return return_value;
     }
