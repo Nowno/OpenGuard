@@ -59,8 +59,6 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
 
     /// Run motion detection
     bool motion_detected = motion_detector->Detect(frame);
-    static OpenGuard::Utils::StateTracker previous_motion;                        /// [MaybeUnused] The previous motion state
-    static ObjectDetector::Object object_detected = ObjectDetector::Object::NONE; /// Previous detected object
 
     if (motion_detected)
     {
@@ -68,9 +66,9 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
         overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, "Motion", cv::Point(12, 45), cv::Scalar(255, 0, 255), 0.5));
 
         /// To avoid spamming the logs, only log once per motion event
-        if (!previous_motion.GetState())
+        if (!motion_state.GetState())
         {
-            previous_motion.SetState(true);                                  /// Update the state
+            motion_state.SetState(true);                               /// Update the state
             HookManager::GetInstance().ExecuteHooks("on_motion", {});  /// Trigger the motion hooks
         }
 
@@ -94,7 +92,7 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
     }
     else
     {
-        previous_motion.SetState(false);
+        motion_state.SetState(false);
     }
 
     /// Render the overlay, before recording so that the overlay is also recorded

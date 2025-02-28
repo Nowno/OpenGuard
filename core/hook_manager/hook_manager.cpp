@@ -70,8 +70,12 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
     if (hooks.find(event) == hooks.end())
         return;
 
-    /// Inject event name into args
+    /// Inject event name and time into args to avoid doing each time
     args["event"] = event;
+    args["time"] = std::to_string(time(0));
+
+    /// Reset the output for the event
+    hook_outputs[event] = "{}";
 
     /// Edge case for on_hook event
     for (const Hook& on_hook : hooks["on_hook"])
@@ -102,7 +106,7 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
             if (hook.blocking)                                      /// In the case of blocking hooks, execute them synchronously and capture the output
                 this->hook_outputs[event] = hook.callback(args);
             else
-                std::thread(hook.callback, args).detach();         /// For non-blocking we can kind of just run them and forget about them
+                std::thread(hook.callback, args).detach();          /// For non-blocking we can kind of just run them and forget about them
         }
         else if (hook.type == HookType::EXTERNAL)
         {
@@ -123,12 +127,17 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
                 /// For blocking hooks, execute them synchronously and capture the output
                 auto result = OpenGuard::Utils::ExecuteCommand(command);
                 std::lock_guard<std::mutex> lock(hook_mutex);
-                this->hook_outputs[event] = result;
+                this->hook_outputs[event] = AppendOutput(event, result);
             }
             else
             {
                 /// And as before, fire and forget
-                std::thread([command](){OpenGuard::Utils::ExecuteCommand(command);}).detach();
+                std::thread([&]()
+                {
+                    std::string result = OpenGuard::Utils::ExecuteCommand(command);
+                    std::lock_guard<std::mutex> lock(hook_mutex);
+                    this->hook_outputs[event] = AppendOutput(event, result);
+                }).detach();
             }
         }
 
@@ -201,4 +210,43 @@ int HookManager::GetCooldown(const std::string& hook_path)
     }
 
     return cooldown_int;
+}
+
+
+/**
+ * @brief Get the output of a hook.
+ */
+std::string HookManager::GetHookOutput(const std::string& event, const std::string& key)
+{
+    std::lock_guard<std::mutex> lock(output_mutex);
+
+    if (hook_outputs.find(event) == hook_outputs.end())
+        return "";
+
+    json data = json::parse(hook_outputs[event]);
+
+    if (data.find(key) == data.end())
+        return "";
+
+    return data[key];
+}
+
+/**
+ * @brief Append output to the output of a hook.
+ */
+std::string HookManager::AppendOutput(const std::string& event, const std::string& output)
+{
+    if (hook_outputs.find(event) == hook_outputs.end())
+        return output;
+
+    json data = json::parse(hook_outputs[event]);
+
+    json new_data = json::parse(output);
+
+    for (auto& [key, value] : new_data.items())
+    {
+        data[key] = value;
+    }
+
+    return data.dump();
 }

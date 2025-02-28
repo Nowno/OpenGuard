@@ -42,11 +42,17 @@ int main()
     }, false));
 
     /// 3 - Execute on_start hooks
-    hook_manager.ExecuteHooks("on_start", {{"time", std::to_string(time(0))}});
+    hook_manager.ExecuteHooks("on_start", {});
 
     while (true)
     {
         auto frame = cap.GetFrame();
+
+        auto motion_hook_output = hook_manager.GetHookOutput("on_motion", "pause");
+
+        /// If the motion hook output is not empty and the cooldown has not expired, skip the frame
+        if (!motion_hook_output.empty() && std::stoi(motion_hook_output) - time(0) > 0)
+            continue;
 
         fp.ProcessFrame(frame);
 
@@ -56,6 +62,5 @@ int main()
         cap.Update();
     }
 
-    //todo: setup script py
     return 0;
 }

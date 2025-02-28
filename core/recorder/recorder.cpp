@@ -173,6 +173,7 @@ void Recorder::ConvertToMP4(const std::string& file, ObjectDetector::Object obje
         Logger::GetInstance().Log("ERROR", "Conversion failed.");
     }
 
+
     /// We are no longer converting
     converting = false;
 
@@ -194,7 +195,7 @@ void Recorder::ConvertToMP4(const std::string& file, ObjectDetector::Object obje
     }
 
     /// Execute the on_converted hooks
-    HookManager::GetInstance().ExecuteHooks("on_converted", {{"file", out_file}, {"object", ObjectDetector::GetObjectString(object_detected)}});
+    HookManager::GetInstance().ExecuteHooks("on_save", {{"file", out_file}, {"object", ObjectDetector::GetObjectString(object_detected)}});
 
 
     /// If there is a next file, start converting it

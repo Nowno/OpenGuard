@@ -57,6 +57,14 @@ class HookManager
     */
     void ExecuteHooks(const std::string& event, std::unordered_map<std::string, std::string> args);
 
+    /**
+     * @brief Get the output of a hook.
+     * @param event The name of the event.
+     * @param key The key of the output.
+     * @return The value for the given key in the output of the hook.
+     */
+    std::string GetHookOutput(const std::string& event, const std::string& key);
+
     private:
     std::unordered_map<std::string, std::vector<Hook>> hooks;  /// Hook table
     std::unordered_map<std::string, std::string> hook_outputs; /// Output of hooks (used for blocking hooks)
@@ -89,6 +97,8 @@ class HookManager
      * @return The cooldown of the hook (if the first line contains "cooldown", if so extract the value).
      */
     int GetCooldown(const std::string& hook_path);
+
+    std::string AppendOutput(const std::string& event, const std::string& output);
 
 };
 

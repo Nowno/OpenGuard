@@ -6,8 +6,8 @@ import time
 
 class OpenGuard:
     # These two will be written to by the setup script to avoid reading them on every hook call
-    TELEGRAM_TOKEN = None
-    TELEGRAM_CHAT_ID = None
+    TELEGRAM_TOKEN = "7593504613:AAFlvC7c_gIBUYlRYPqtD1uQW0V55L77so8"
+    TELEGRAM_CHAT_ID = "318319458"
 
     def __init__(self):
         """ Initialize OpenGuard API and parse JSON arguments from C++ """
@@ -84,3 +84,7 @@ class OpenGuard:
     def return_output(self):
         """ Returns the output dictionary as a JSON string """
         print(json.dumps(self.output))
+
+    def unix_to_human(self, unix_time, format='%H:%M:%S'):
+        """ Convert a Unix timestamp to human-readable format """
+        return time.strftime(format, time.localtime(unix_time))

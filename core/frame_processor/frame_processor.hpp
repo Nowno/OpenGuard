@@ -45,7 +45,8 @@ class FrameProcessor
     std::unique_ptr<MotionDetector> motion_detector;   /// The motion detector
     std::unique_ptr<ObjectDetector> object_detector;   /// The object detector
 
-    OpenGuard::Utils::StateTracker motion_state;       /// [MaybeUnused] The previous motion state
+    OpenGuard::Utils::StateTracker motion_state;                           /// [MaybeUnused] The previous motion state
+    ObjectDetector::Object object_detected = ObjectDetector::Object::NONE; /// Previous detected object
 
     std::shared_ptr<OverlayRenderer> overlay_renderer; /// The overlay renderer for this frame
 
