@@ -53,6 +53,7 @@ class FrameProcessor
     cv::Mat processed_frame;                           /// The processed frame
     Capture& cap;                                      /// The capture object
     std::unique_ptr<Recorder> recorder;                /// Recorder instance
+    int pause_system = 0;                              /// Pause system for a number of seconds
 };
 
 

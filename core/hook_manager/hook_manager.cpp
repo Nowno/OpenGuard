@@ -225,15 +225,29 @@ std::string HookManager::GetHookOutput(const std::string& event, const std::stri
 
     std::lock_guard<std::mutex> lock(output_mutex);
 
-    if (hook_outputs.find(event) == hook_outputs.end())
+    if (hook_outputs.find(event) == hook_outputs.end() ||
+        hook_outputs[event].empty()                    ||
+        hook_outputs[event] == "{}"                    ||
+        key.empty())
+    {
         return "";
+    }
+    
+    std::string ret;
 
-    json data = json::parse(hook_outputs[event]);
+    try
+    {
+        json data = json::parse(hook_outputs[event]);
+        ret = data.at(key);
+    }
+    catch (const std::exception& e)
+    {
+        Logger::GetInstance().Log("ERROR", "Failed to get hook output: " + std::string(e.what()));
 
-    if (data.find(key) == data.end())
         return "";
+    }
 
-    return data[key];
+    return ret;
 }
 
 /**

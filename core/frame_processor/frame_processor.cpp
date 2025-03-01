@@ -57,10 +57,15 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
         return;
     }
 
+    if (HookManager::GetInstance().GetHookOutput("on_motion", "pause_system") != "")
+    {
+        pause_system = std::stoi(HookManager::GetInstance().GetHookOutput("on_motion", "pause_system"));
+    }
     /// Run motion detection
     bool motion_detected = motion_detector->Detect(frame);
+    bool is_paused = time(0) - pause_system < 0;
 
-    if (motion_detected)
+    if (motion_detected && !is_paused)
     {
         /// For visibility, add an indicator of motion
         overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, "Motion", cv::Point(12, 45), cv::Scalar(255, 0, 255), 0.5));

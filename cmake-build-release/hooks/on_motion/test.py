@@ -12,4 +12,6 @@ open_guard.send_telegram_message("Hello from Python!")
 
 ### Example for later, check if user is home(connected to wifi for example) or this can be used to turn on the light to help detect the object
 
+open_guard.pause_system(20)
+
 open_guard.return_output()

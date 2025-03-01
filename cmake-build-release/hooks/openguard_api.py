@@ -74,8 +74,7 @@ class OpenGuard:
 
     def pause_system(self, seconds):
         """ Pause motion detection for a specified number of seconds """
-        self.add_output("sleep_call", seconds)
-        sys.exit(0)
+        self.add_output("pause_system", str(time.time() + seconds))
 
     def log(self, message, level="INFO"):
         """ Add a message to be logged by the native logger """
