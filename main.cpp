@@ -1,44 +1,65 @@
-#define ASIO_STANDALONE
-#define _WEBSOCKETPP_NO_BOOST_  // Disables Boost in WebSocket++
-#define _WEBSOCKETPP_CPP11_STL_ // Forces standard C++ STL instead of Boost
-#include <websocketpp/config/asio_no_tls.hpp>
-#include <websocketpp/server.hpp>
-#include <iostream>
+#include "core/frame_processor/frame_processor.hpp"
+#include "core/detection/mog2/mog2.hpp"
+#include "core/detection/yolo/yolo.hpp"
+#include "core/hook_manager/hook_manager.hpp"
+#include "utils/logger/logger.hpp"
 
-typedef websocketpp::server<websocketpp::config::asio> server;
+int main()
+{
+    /// Log application start
+    Logger::GetInstance().Log("INFO", "Application started.");
 
-// Message handler
-void on_message(server* s, websocketpp::connection_hdl hdl, server::message_ptr msg) {
-    std::cout << "Received: " << msg->get_payload() << std::endl;
+    /// Set up capture
+    Capture cap(ConfigManager::GetInstance().GetConfig<int>("frame_width"),
+                ConfigManager::GetInstance().GetConfig<int>("frame_height"),
+                ConfigManager::GetInstance().GetConfig<int>("frame_rate"));
 
-    // Echo the message back
-    try {
-        s->send(hdl, msg->get_payload(), msg->get_opcode());
-    } catch (websocketpp::exception const & e) {
-        std::cerr << "Error sending message: " << e.what() << std::endl;
-    }
-}
+    /// Set up detectors
+    auto motion_detector = std::make_unique<MOG2Detector>();
+    motion_detector->setDrawBoundingBoxes(false);
 
-int main() {
-    server wsServer;
+    auto object_detector = std::make_unique<YOLODetector>();
+    object_detector->setDrawBoundingBoxes(true);
 
-    try {
-        // Set Asio transport
-        wsServer.init_asio();
+    /// Create frame processor and assign motion and object detectors
+    FrameProcessor fp(cap);
+    fp.SetMotionDetector(std::move(motion_detector));
+    fp.SetObjectDetector(std::move(object_detector));
 
-        // Set message handler
-        wsServer.set_message_handler(std::bind(&on_message, &wsServer, std::placeholders::_1, std::placeholders::_2));
+    /// Register hooks
+    /// 1 - Bulk register external hooks in their designated directories
+    HookManager& hook_manager = HookManager::GetInstance();
+    hook_manager.RegisterHooks("hooks/on_start");
+    hook_manager.RegisterHooks("hooks/on_motion");
+    hook_manager.RegisterHooks("hooks/on_object");
+    hook_manager.RegisterHooks("hooks/on_save");
+    hook_manager.RegisterHooks("hooks/on_fatal");
 
-        // Listen on port 9002
-        wsServer.listen(9002);
-        wsServer.start_accept();
+    /// 2 - Register native hooks manually
+    hook_manager.RegisterHook("on_hook", HookManager::Hook(HookManager::HookType::NATIVE, [](const std::unordered_map<std::string, std::string>& args) -> int {
+        Logger::GetInstance().Log("INFO", args.at("event") + " events called.");
+        return 0;
+    }, false));
 
-        std::cout << "WebSocket server listening on ws://localhost:9002" << std::endl;
+    /// 3 - Execute on_start hooks
+    hook_manager.ExecuteHooks("on_start", {});
 
-        // Start the Asio event loop
-        wsServer.run();
-    } catch (const std::exception &e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
+    while (true)
+    {
+        auto frame = cap.GetFrame();
+
+        //auto motion_hook_output = hook_manager.GetHookOutput("on_motion", "pause");
+
+        /// If the motion hook output is not empty and the cooldown has not expired, skip the frame
+        /*if (!motion_hook_output.empty() && std::stoi(motion_hook_output) - time(0) > 0)
+            continue;*/
+
+        fp.ProcessFrame(frame);
+
+        if (!fp.RenderFrame())
+            break;
+
+        cap.Update();
     }
 
     return 0;
