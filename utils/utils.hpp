@@ -213,6 +213,25 @@ namespace OpenGuard::Utils
             return GetDuration() >= seconds;
         }
     };
+
+
+    /**
+     * @brief Profiler for measuring time, implemented using the previous Timer class.
+     */
+    struct Profiler
+    {
+        std::unordered_map<std::string, Timer> timers;
+
+        void Start(const std::string& name)
+        {
+            timers[name].Reset();
+        }
+
+        double Stop(const std::string& name)
+        {
+            return timers[name].GetDuration();
+        }
+    };
 }
 
 using OpenGuard::Utils::Vec2;

@@ -10,6 +10,7 @@
 
 
 #define OPENGUARD_VERSION "0.1.8"
+#define UWS_NO_ZLIB
 
 const bool dbg_profiling = false;
 const bool dbg_debug = false;
