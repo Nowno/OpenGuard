@@ -105,16 +105,13 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
 
     /// Add the frame to the recorder
     recorder->AddFrame(frame, motion_detected, object_detected);
-
-    /// Update the processed frame
-    this->processed_frame = frame;
 }
 
 
 /**
  * @brief Render the frame.
  */
-bool FrameProcessor::RenderFrame()
+bool FrameProcessor::RenderFrame(cv::Mat& processed_frame)
 {
     /// If q is pressed, exit
     if (cv::waitKey(1) == 'q')

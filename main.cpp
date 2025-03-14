@@ -2,7 +2,7 @@
 #include "core/hook_manager/hook_manager.hpp"
 #include "core/detection/mog2/mog2.hpp"
 #include "core/detection/yolo/yolo.hpp"
-#include "core/network/ws_server.hpp"
+#include "core/server/ws_server.hpp"
 #include "utils/logger/logger.hpp"
 
 int main()
@@ -46,7 +46,7 @@ int main()
     hook_manager.ExecuteHooks("on_start", {});
 
     /// Start the WebSocket server to communicate with the web panel
-    WSServer::GetInstance().Start();
+    WSServer::GetInstance();
 
     while (true)
     {
@@ -60,7 +60,7 @@ int main()
 
         fp.ProcessFrame(frame);
 
-        if (!fp.RenderFrame())
+        if (!fp.RenderFrame(frame))
             break;
 
         cap.Update();

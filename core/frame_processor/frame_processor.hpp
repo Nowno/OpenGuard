@@ -25,9 +25,10 @@ class FrameProcessor
 
     /**
      * @brief Render the frame.
+     * @param frame The frame to render.
      * @return Whether the frame was rendered successfully or if the program should exit.
      */
-    bool RenderFrame();
+    bool RenderFrame(cv::Mat& frame);
 
     /// For future flexibility, allow the motion and object detectors to be altered at runtime
     /**
@@ -50,7 +51,6 @@ class FrameProcessor
 
     std::shared_ptr<OverlayRenderer> overlay_renderer; /// The overlay renderer for this frame
 
-    cv::Mat processed_frame;                           /// The processed frame
     Capture& cap;                                      /// The capture object
     std::unique_ptr<Recorder> recorder;                /// Recorder instance
     int pause_system = 0;                              /// Pause system for a number of seconds

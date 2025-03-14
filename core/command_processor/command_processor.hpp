@@ -8,7 +8,7 @@
 class CommandProcessor
 {
     public:
-    static CommandProcessor& CommandProcessor::GetInstance()
+    static CommandProcessor& GetInstance()
     {
         static CommandProcessor instance;
         return instance;
