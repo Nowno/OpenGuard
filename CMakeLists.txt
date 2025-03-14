@@ -40,6 +40,10 @@ add_executable(OpenGuard main.cpp
         core/openguard.hpp
         utils/worker_thread/worker_thread.tpp
         utils/worker_thread/worker_thread.hpp
+        core/command_processor/command_processor.cpp
+        core/command_processor/command_processor.hpp
+        core/server/ws_server.cpp
+        core/server/ws_server.hpp
 )
 
 

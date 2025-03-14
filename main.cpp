@@ -1,7 +1,8 @@
 #include "core/frame_processor/frame_processor.hpp"
+#include "core/hook_manager/hook_manager.hpp"
 #include "core/detection/mog2/mog2.hpp"
 #include "core/detection/yolo/yolo.hpp"
-#include "core/hook_manager/hook_manager.hpp"
+#include "core/network/ws_server.hpp"
 #include "utils/logger/logger.hpp"
 
 int main()
@@ -44,6 +45,9 @@ int main()
     /// 3 - Execute on_start hooks
     hook_manager.ExecuteHooks("on_start", {});
 
+    /// Start the WebSocket server to communicate with the web panel
+    WSServer::GetInstance().Start();
+
     while (true)
     {
         auto frame = cap.GetFrame();
@@ -60,6 +64,7 @@ int main()
             break;
 
         cap.Update();
+        WSServer::GetInstance().Poll();
     }
 
     return 0;

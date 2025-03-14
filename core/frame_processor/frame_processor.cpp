@@ -63,8 +63,8 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
     }
     /// Run motion detection
     bool motion_detected = motion_detector->Detect(frame);
-    bool is_paused = time(0) - pause_system < 0;
-
+    bool is_paused = 0 && time(0) - pause_system < 0;
+//todo fix
     if (motion_detected && !is_paused)
     {
         /// For visibility, add an indicator of motion

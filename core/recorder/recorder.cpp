@@ -51,7 +51,7 @@ void Recorder::AddFrame(const cv::Mat& frame, bool motion_detected, ObjectDetect
         frame_buffer.pop_front();
 
     /// Check if the object detected is in the record-worthy list
-    bool object_detected_flagged = record_worthy.find(ObjectDetector::GetObjectString(object_detected)) != record_worthy.end();
+    bool object_detected_flagged = object_detected != ObjectDetector::Object::NONE && record_worthy.find(ObjectDetector::GetObjectString(object_detected)) != record_worthy.end();
 
     /// If the object is record-worthy, set the flagged object to the detected object (to be later passed to the converter)
     if (object_detected_flagged)
