@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <future>
 
 
 #include "hook_manager.hpp"
@@ -106,7 +107,7 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
             if (hook.blocking)                                      /// In the case of blocking hooks, execute them synchronously and capture the output
                 this->hook_outputs[event] = hook.callback(args);
             else
-                std::thread(hook.callback, args).detach();          /// For non-blocking we can kind of just run them and forget about them
+                std::async(std::launch::async, hook.callback, args);/// For non-blocking we can kind of just run them and forget about them
         }
         else if (hook.type == HookType::EXTERNAL)
         {
@@ -134,13 +135,13 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
             else
             {
                 /// And as before, fire and forget
-                std::thread([&, event, command]()
+                std::async(std::launch::async, [&, event, command]()
                 {
                     std::string result = OpenGuard::Utils::ExecuteCommand(command);
 
                     std::lock_guard<std::mutex> lock(output_mutex);
                     this->hook_outputs[event] = AppendOutput(event, result);
-                }).detach();
+                });
             }
         }
 

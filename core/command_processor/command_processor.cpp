@@ -4,6 +4,12 @@
 
 using json = nlohmann::json;
 
+CommandProcessor::CommandProcessor()
+{
+
+
+}
+
 void CommandProcessor::Process(const std::string &command)
 {
     json parsed_command = ParseCommand(command);
