@@ -89,6 +89,7 @@ void WSServer::OnMessage(websocketpp::connection_hdl hdl, websocketpp::server<we
         if (response == "authenticated")
         {
             Logger::GetInstance().Log("INFO", "Client authenticated.");
+            //send infos
             authenticated = true;
         }
         else
@@ -110,12 +111,8 @@ void WSServer::Send(const std::string& message)
         return;
     }
 
-    try
+    OpenGuard::Utils::SafeCall([&]()
     {
         wsServer.send(client.value(), message, websocketpp::frame::opcode::text);
-    }
-    catch (const websocketpp::exception &e)
-    {
-        Logger::GetInstance().Log("ERROR", "Failed to send message: " + std::string(e.what()));
-    }
+    });
 }

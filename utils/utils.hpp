@@ -151,9 +151,24 @@ namespace OpenGuard::Utils
         if (return_value.empty())
             return "{}";
 
-        printf("output: %s\n", return_value.c_str());
-
         return return_value;
+    }
+
+    /// Try-catch block for safe execution of functions. Avoids repetition.
+    template <typename T>
+    inline auto SafeCall(T func)
+    {
+        try
+        {
+            return func();
+        }
+        catch (const std::exception& e)
+        {
+            printf("[XX-XX-XXXX XX:XX:XX] [ERROR] %s\n", e.what());
+
+            /// Returns the default value for the decltype of the function
+            return decltype(func())();
+        }
     }
 
 

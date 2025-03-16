@@ -66,7 +66,7 @@ namespace config {
 /// Server config with minimal dependencies
 /**
  * This config strips out as many dependencies as possible. It is suitable for
- * use as a base class for custom configs that want to implement or choose their
+ * use as a base class for custom config_manager that want to implement or choose their
  * own policies for components that even the core config includes.
  *
  * NOTE: this config stubs out enough that it cannot be used directly. You must

@@ -1,6 +1,7 @@
 #include "command_processor.hpp"
 #include <json/json.hpp>
 #include "../../utils/logger/logger.hpp"
+#include "../../utils/config_manager/config_manager.hpp"
 
 using json = nlohmann::json;
 
@@ -31,18 +32,9 @@ std::string CommandProcessor::Process(const std::string &command)
 
 json CommandProcessor::ParseCommand(const std::string &command)
 {
-    json command_json;
+    json command_json = OpenGuard::Utils::SafeCall([&](){ return json::parse(command);});
 
-    try
-    {
-        command_json = json::parse(command);
-    }
-    catch (const std::exception &e)
-    {
-        command_json = "{}";
-    }
-
-    if (command_json.empty() || !command_json.contains("type") || !command_json.contains("args"))
+    if (command_json.empty() ||command_json.is_null() || !command_json.contains("type") || !command_json.contains("args"))
     {
         Logger::GetInstance().Log("ERROR", "Invalid json received from client: " + command);
     }
@@ -65,7 +57,25 @@ std::string CommandProcessor::Login(const std::string &args)
 {
     Logger::GetInstance().Log("INFO", "Login command received.");
 
-    printf("%s\n", args.c_str());
+    json args_json =  OpenGuard::Utils::SafeCall([&](){ return json::parse(args);});
 
-    return "Login command received.";
+    if (args_json.is_null())
+    {
+        Logger::GetInstance().Log("ERROR", "Failed to parse login args.");
+        return "failed";
+    }
+
+    if (!args_json.contains("username") || !args_json.contains("password"))
+    {
+        Logger::GetInstance().Log("ERROR", "Login args missing username or password.");
+        return "failed";
+    }
+
+    if (args_json["username"] == ConfigManager::GetInstance().GetConfig<std::string>("username") &&
+        args_json["password"] == ConfigManager::GetInstance().GetConfig<std::string>("password"))
+    {
+        return "authenticated";
+    }
+
+    return "failed";
 }

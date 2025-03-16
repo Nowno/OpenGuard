@@ -38,7 +38,7 @@ YOLODetector::YOLODetector()
     nms_threshold = 0.45; /// Decided against exposing this to the user as it may not be intuitive
 
     /// Set preferable backend & target (CPU or CUDA if available)
-    setHardwareAcceleration(ConfigManager::GetInstance().GetConfig<bool>("use_gpu"));
+    setHardwareAcceleration(ConfigManager::GetInstance().GetConfig<bool>("yolo_use_gpu"));
 
     worker_thread = std::make_unique<WorkerThread<cv::Mat, DetectionResult>>
             ([this](const cv::Mat &frame) -> DetectionResult
@@ -282,7 +282,7 @@ YOLODetector::DetectionResult YOLODetector::RunInference(const cv::Mat &frame)
 
 ObjectDetector::Object YOLODetector::Detect(const cv::Mat &frame)
 {
-    static int call_freq = ConfigManager::GetInstance().GetConfig<int>("object_detection_frequency");
+    static int call_freq = ConfigManager::GetInstance().GetConfig<int>("yolo_object_detection_frequency");
 
     if (call_freq > 1 && call_count++ % call_freq != 0)
         return last_detection;

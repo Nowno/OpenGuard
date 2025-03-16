@@ -1,5 +1,5 @@
-#ifndef OPENGUARD_USER_CONFIG_HPP
-#define OPENGUARD_USER_CONFIG_HPP
+#ifndef OPENGUARD_CONFIG_MANAGER_HPP
+#define OPENGUARD_CONFIG_MANAGER_HPP
 
 #include <string>
 #include <unordered_map>
@@ -99,4 +99,4 @@ class ConfigManager
 };
 
 
-#endif //OPENGUARD_USER_CONFIG_HPP
+#endif //OPENGUARD_CONFIG_MANAGER_HPP

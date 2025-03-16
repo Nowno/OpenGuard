@@ -81,18 +81,11 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
     /// Edge case for on_hook event
     for (const Hook& on_hook : hooks["on_hook"])
     {
-        try
-        {
-            /// Reserved this hook for native hooks only to avoid performance issues
-            if (on_hook.blocking)
-                on_hook.callback(args);
-            else
-                std::thread(on_hook.callback, args).detach();
-        }
-        catch (const std::exception& e)
-        {
-            Logger::GetInstance().Log("ERROR", "Failed to execute on_hook: " + std::string(e.what()));
-        }
+        /// Reserved this hook for native hooks only to avoid performance issues
+        if (on_hook.blocking)
+            on_hook.callback(args);
+        else
+            std::async(std::launch::async, on_hook.callback, args);
     }
 
     for (Hook &hook: hooks[event])
@@ -201,20 +194,8 @@ int HookManager::GetCooldown(const std::string& hook_path)
     /// If the header contains "COOLDOWN", extract the cooldown value, which is a space after "COOLDOWN"
     std::string cooldown = header.substr(pos + 9);
 
-    int cooldown_int = 0;
-
-    try
-    {
-        /// Attempt to parse the cooldown value
-        cooldown_int = std::stoi(cooldown);
-    }
-    catch (std::invalid_argument& e)
-    {
-        /// If the cooldown value is not a number, log an error and return the default value
-        Logger::GetInstance().Log("ERROR", "Could not parse cooldown for hook: " + hook_path);
-    }
-
-    return cooldown_int;
+    /// Convert the cooldown to an integer and return it
+    return OpenGuard::Utils::SafeCall([&](){ return std::stoi(cooldown); });
 }
 
 
@@ -233,20 +214,9 @@ std::string HookManager::GetHookOutput(const std::string& event, const std::stri
     {
         return "";
     }
-    
-    std::string ret;
 
-    try
-    {
-        json data = json::parse(hook_outputs[event]);
-        ret = data.at(key);
-    }
-    catch (const std::exception& e)
-    {
-        Logger::GetInstance().Log("ERROR", "Failed to get hook output: " + std::string(e.what()));
-
-        return "";
-    }
+    /// Return the value of the key in the JSON output
+    std::string ret = OpenGuard::Utils::SafeCall([&](){ return json::parse(hook_outputs[event]).at(key); });
 
     return ret;
 }

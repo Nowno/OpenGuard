@@ -35,10 +35,14 @@ class WebSocketHandler
         this.websocket.onopen = () =>
         {
             console.log("✅ Connected ");
+
             this.status_call_back("Connected");
             this.reconnect_attemps = 0;
             this.is_reconnecting = false;
+
             clearTimeout(this.reconnect_timer);
+
+
 
             if (this.snapshot_requested)
             {

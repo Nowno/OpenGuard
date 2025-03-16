@@ -27,14 +27,14 @@ add_executable(OpenGuard main.cpp
         core/detection/object_detector.hpp
         core/detection/yolo/yolo.cpp
         core/detection/yolo/yolo.hpp
-        utils/configs/user_config.hpp
+        utils/config_manager/config_manager.hpp
         core/overlay_renderer/overlay_renderer.cpp
         core/overlay_renderer/overlay_renderer.hpp
         core/recorder/recorder.cpp
         core/recorder/recorder.hpp
         utils/logger/logger.cpp
         utils/logger/logger.hpp
-        utils/configs/user_config.cpp
+        utils/config_manager/config_manager.cpp
         core/hook_manager/hook_manager.cpp
         core/hook_manager/hook_manager.hpp
         core/openguard.hpp

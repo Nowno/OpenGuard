@@ -5,7 +5,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "../utils/configs/user_config.hpp"
+#include "../utils/config_manager/config_manager.hpp"
 #include "../utils/logger/logger.hpp"
 
 

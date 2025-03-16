@@ -41,7 +41,7 @@ Recorder::~Recorder()
 void Recorder::AddFrame(const cv::Mat& frame, bool motion_detected, ObjectDetector::Object object_detected)
 {
     /// This will persist across instances of the recorder, this is a list of objects that are record-worthy
-    static std::unordered_set<std::string> record_worthy = ConfigManager::GetInstance().GetConfig<std::unordered_set<std::string>>("record_worthy");
+    static std::unordered_set<std::string> record_worthy = ConfigManager::GetInstance().GetConfig<std::unordered_set<std::string>>("yolo_record_worthy");
 
     /// Add the frame to the buffer
     frame_buffer.push_back(frame.clone());

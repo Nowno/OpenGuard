@@ -158,7 +158,7 @@ typedef lib::function<void(lib::error_code const & ec)> write_frame_handler;
 #ifdef _WEBSOCKETPP_INITIALIZER_LISTS_ // simplified C++11 version
     /// Container that stores the list of protocol versions supported
     /**
-     * @todo Move this to configs to allow compile/runtime disabling or enabling
+     * @todo Move this to config_manager to allow compile/runtime disabling or enabling
      * of protocol versions
      */
     static std::vector<int> const versions_supported = {0,7,8,13};
@@ -167,7 +167,7 @@ typedef lib::function<void(lib::error_code const & ec)> write_frame_handler;
     static int const helper[] = {0,7,8,13};
     /// Container that stores the list of protocol versions supported
     /**
-     * @todo Move this to configs to allow compile/runtime disabling or enabling
+     * @todo Move this to config_manager to allow compile/runtime disabling or enabling
      * of protocol versions
      */
     static std::vector<int> const versions_supported(helper,helper+4);

@@ -1,5 +1,5 @@
 #include "frame_processor.hpp"
-#include "../../utils/configs/user_config.hpp"
+#include "../../utils/config_manager/config_manager.hpp"
 #include "../../utils/logger/logger.hpp"
 #include "../hook_manager/hook_manager.hpp"
 
