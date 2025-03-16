@@ -1,5 +1,8 @@
 #include "ws_server.hpp"
 #include "../../utils/logger/logger.hpp"
+#include <json/json.hpp>
+
+using json = nlohmann::json;
 
 WSServer& WSServer::GetInstance()
 {
@@ -31,23 +34,25 @@ void WSServer::OnOpen(websocketpp::connection_hdl hdl)
 {
     if (client)
     {
-        Logger::GetInstance().Log("WARNING", "New client attempted to connect but was rejected.");
-
+        Logger::GetInstance().Log("INFO", "Existing client disconnected, accepting new connection.");
         try
         {
-            wsServer.close(hdl, websocketpp::close::status::policy_violation, "Server full.");
+            wsServer.close(client.value(), websocketpp::close::status::going_away, "Reconnecting...");
         }
         catch (const websocketpp::exception& e)
         {
-            Logger::GetInstance().Log("ERROR", "Failed to reject client: " + std::string(e.what()));
+            Logger::GetInstance().Log("ERROR", "Failed to close old client: " + std::string(e.what()));
         }
-
-        return;
+        client.reset();
     }
 
-    Logger::GetInstance().Log("INFO", "Client connected.");
+    Logger::GetInstance().Log("INFO", "New client connected.");
     client = hdl;
+
+    json response = {{"type", "status"}, {"message", "connected"}};
+    Send(response.dump());
 }
+
 
 void WSServer::OnClose(websocketpp::connection_hdl hdl)
 {

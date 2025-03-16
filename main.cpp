@@ -4,6 +4,7 @@
 #include "core/detection/yolo/yolo.hpp"
 #include "core/server/ws_server.hpp"
 #include "utils/logger/logger.hpp"
+#include <thread>
 
 int main()
 {
@@ -58,13 +59,14 @@ int main()
         /*if (!motion_hook_output.empty() && std::stoi(motion_hook_output) - time(0) > 0)
             continue;*/
 
-        fp.ProcessFrame(frame);
+        //fp.ProcessFrame(frame);
 
-        if (!fp.RenderFrame(frame))
-            break;
+        //if (!fp.RenderFrame(frame))
+          //  break;
 
-        cap.Update();
+        //cap.Update();
         WSServer::GetInstance().Poll();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     return 0;
