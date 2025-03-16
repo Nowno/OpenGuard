@@ -1,6 +1,8 @@
+#include <json/json.hpp>
+
 #include "ws_server.hpp"
 #include "../../utils/logger/logger.hpp"
-#include <json/json.hpp>
+#include "../command_processor/command_processor.hpp"
 
 using json = nlohmann::json;
 
@@ -27,6 +29,15 @@ WSServer::WSServer()
 
 void WSServer::Poll()
 {
+    if (client && !authenticated)
+    {
+        if (auth_timer.HasElapsed(6))
+        {
+            Logger::GetInstance().Log("ERROR", "Client failed to authenticate within 5 seconds, closing connection.");
+            wsServer.close(client.value(), websocketpp::close::status::policy_violation, "Authentication timeout.");
+            client.reset();
+        }
+    }
     wsServer.poll();
 }
 
@@ -51,6 +62,9 @@ void WSServer::OnOpen(websocketpp::connection_hdl hdl)
 
     json response = {{"type", "status"}, {"message", "connected"}};
     Send(response.dump());
+
+    this->authenticated = false;
+    this->auth_timer.Reset();
 }
 
 
@@ -67,6 +81,24 @@ void WSServer::OnMessage(websocketpp::connection_hdl hdl, websocketpp::server<we
 {
     std::string command = msg->get_payload();
     Logger::GetInstance().Log("INFO", "Received command: " + command);
+
+    auto response = CommandProcessor::GetInstance().Process(command);
+
+    if (!authenticated)
+    {
+        if (response == "authenticated")
+        {
+            Logger::GetInstance().Log("INFO", "Client authenticated.");
+            authenticated = true;
+        }
+        else
+        {
+            Logger::GetInstance().Log("ERROR", "Client failed to authenticate.");
+            wsServer.close(hdl, websocketpp::close::status::policy_violation, "Authentication failed.");
+            client.reset();
+            return;
+        }
+    }
 }
 
 

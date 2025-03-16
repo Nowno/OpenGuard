@@ -25,13 +25,16 @@ Logger::Logger()
  */
 void Logger::Log(const std::string& type, const std::string& message, bool save)
 {
+    /// Form the log message and print it.
     std::string log_message = "[" + OpenGuard::Utils::GetDateTimeString(false) + "] [" + type + "] " + message + "\n";
-    std::cout << log_message; /// Form the log message and print it.
+    std::cout << log_message;
 
-    if (type == "FATAL")      /// If there was a fatal error, execute the appropriate hooks as the user may want to handle it
+    /// If there was a fatal error, execute the appropriate hooks as the user may want to handle it
+    if (type == "FATAL")
         HookManager::GetInstance().ExecuteHooks("on_fatal", {{"message", message}});
 
-    if (!save)                /// If we don't want to save the message, no need to proceed.
+    /// If we don't want to save the message, no need to proceed.
+    if (!save)
         return;
 
     if (this->log_file.is_open())

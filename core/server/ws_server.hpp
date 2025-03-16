@@ -8,6 +8,8 @@
 #include <websocketpp/server.hpp>
 #include <optional>
 
+#include "../../utils/utils.hpp"
+
 class WSServer
 {
     public:
@@ -27,6 +29,8 @@ class WSServer
 
     websocketpp::server<websocketpp::config::asio> wsServer;
     std::optional<websocketpp::connection_hdl> client;
+    bool authenticated = false;
+    OpenGuard::Utils::Timer auth_timer;
 };
 
 #endif // OPENGUARD_WS_SERVER_HPP

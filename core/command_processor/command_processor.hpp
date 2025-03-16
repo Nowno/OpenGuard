@@ -14,7 +14,7 @@ class CommandProcessor
         return instance;
     }
 
-    void Process(const std::string& command);
+    std::string Process(const std::string& command);
 
     private:
     CommandProcessor();
@@ -22,11 +22,10 @@ class CommandProcessor
     CommandProcessor& operator=(const CommandProcessor&) = delete;
 
     nlohmann::json ParseCommand(const std::string& command);
+    std::string InvokeCommand(const std::string& command_type, const std::string& command_args);
 
-    void InvokeCommand(const std::string& command_type, const std::string& command_args);
+    std::string Login(const std::string& args);
 
-    std::unordered_map<std::string, void (CommandProcessor::*)(const std::string&)> command_map;
+    std::unordered_map<std::string, std::string (CommandProcessor::*)(const std::string&)> command_map;
 };
-
-
 #endif //OPENGUARD_COMMAND_PROCESSOR_HPP
