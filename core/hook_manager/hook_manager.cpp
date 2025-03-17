@@ -85,7 +85,7 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
         if (on_hook.blocking)
             on_hook.callback(args);
         else
-            std::async(std::launch::async, on_hook.callback, args);
+            std::async(std::launch::async, on_hook.callback, args).share();
     }
 
     for (Hook &hook: hooks[event])
@@ -98,9 +98,9 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
         if (hook.type == HookType::NATIVE)
         {
             if (hook.blocking)                                      /// In the case of blocking hooks, execute them synchronously and capture the output
-                this->hook_outputs[event] = hook.callback(args);
+                AppendOutput(event, std::to_string(hook.callback(args)));
             else
-                std::async(std::launch::async, hook.callback, args);/// For non-blocking we can kind of just run them and forget about them
+                std::async(std::launch::async, hook.callback, args).share();/// For non-blocking we can kind of just run them and forget about them
         }
         else if (hook.type == HookType::EXTERNAL)
         {
@@ -123,7 +123,7 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
                 auto result = OpenGuard::Utils::ExecuteCommand(command);
 
                 std::lock_guard<std::mutex> lock(output_mutex);
-                this->hook_outputs[event] = AppendOutput(event, result);
+                AppendOutput(event, result);
             }
             else
             {
@@ -133,8 +133,8 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
                     std::string result = OpenGuard::Utils::ExecuteCommand(command);
 
                     std::lock_guard<std::mutex> lock(output_mutex);
-                    this->hook_outputs[event] = AppendOutput(event, result);
-                });
+                    AppendOutput(event, result);
+                }).share();
             }
         }
 
@@ -224,13 +224,13 @@ std::string HookManager::GetHookOutput(const std::string& event, const std::stri
 /**
  * @brief Append output to the output of a hook.
  */
-std::string HookManager::AppendOutput(const std::string& event, const std::string& output)
+void HookManager::AppendOutput(const std::string& event, const std::string& output)
 {
     if (hook_outputs.find(event) == hook_outputs.end())
-        return output;
+        return;
 
     if (output.empty())
-        return hook_outputs[event];
+        return;
 
     json data;
 
@@ -247,9 +247,8 @@ std::string HookManager::AppendOutput(const std::string& event, const std::strin
     catch (const std::exception& e)
     {
         Logger::GetInstance().Log("ERROR", "Failed to append output: " + std::string(e.what()));
-
-        return hook_outputs[event];
+        return;
     }
 
-    return data.dump();
+   this->hook_outputs[event] = data.dump();
 }

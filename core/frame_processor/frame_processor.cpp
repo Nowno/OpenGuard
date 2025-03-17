@@ -59,12 +59,13 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
 
     if (HookManager::GetInstance().GetHookOutput("on_motion", "pause_system") != "")
     {
-        pause_system = std::stoi(HookManager::GetInstance().GetHookOutput("on_motion", "pause_system"));
+        pause_system = OpenGuard::Utils::SafeCall([&](){ return std::stoi(HookManager::GetInstance().GetHookOutput("on_motion", "pause_system")); });
     }
+
     /// Run motion detection
     bool motion_detected = motion_detector->Detect(frame);
-    bool is_paused = 0 && time(0) - pause_system < 0;
-//todo fix
+    bool is_paused = time(0) - pause_system < 0;
+
     if (motion_detected && !is_paused)
     {
         /// For visibility, add an indicator of motion
@@ -86,7 +87,8 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
             /// Again, to avoid spamming the logs, only log if we haven't started recording yet
             if (!recorder->IsRecording())
                 HookManager::GetInstance().ExecuteHooks("on_object", {{"object", ObjectDetector::GetObjectString(object_detected)}});
-            Logger::GetInstance().Log("INFO", "Object detected: " + ObjectDetector::GetObjectString(object_detected));
+
+            Logger::GetInstance().Log("INFO", "Object detected: " + ObjectDetector::GetObjectString(object_detected), false);
         }
         else
         {

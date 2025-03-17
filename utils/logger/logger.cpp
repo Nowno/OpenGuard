@@ -1,8 +1,9 @@
+#include <iostream>
+#include <sstream>
+
 #include "logger.hpp"
 #include "../config_manager/config_manager.hpp"
 #include "../../core/hook_manager/hook_manager.hpp"
-#include <iostream>
-
 /**
  * @brief Constructor: Initializes the logger.
  */
@@ -23,15 +24,17 @@ Logger::Logger()
 /**
  * @brief Log a message.
  */
-void Logger::Log(const std::string& type, const std::string& message, bool save)
+void Logger::Log(const std::string_view &type, const std::string_view &message, bool save)
 {
     /// Form the log message and print it.
-    std::string log_message = "[" + OpenGuard::Utils::GetDateTimeString(false) + "] [" + type + "] " + message + "\n";
-    std::cout << log_message;
+    std::ostringstream oss;
+    oss << "[" << OpenGuard::Utils::GetDateTimeString(false) << "] [" << type << "] " << message << "\n";
+    std::string log_message = oss.str();
 
+    std::cout << log_message;
     /// If there was a fatal error, execute the appropriate hooks as the user may want to handle it
     if (type == "FATAL")
-        HookManager::GetInstance().ExecuteHooks("on_fatal", {{"message", message}});
+        HookManager::GetInstance().ExecuteHooks("on_fatal", {{"message", std::string(message)}});
 
     /// If we don't want to save the message, no need to proceed.
     if (!save)
@@ -45,6 +48,6 @@ void Logger::Log(const std::string& type, const std::string& message, bool save)
     }
     else
     {
-        Logger::Log("ERROR", "Failed to write to log file.", false);
+        std::cerr << "[XX-XX-XXXX XX:XX:XX] [ERROR] Could not write to log file: " << message << std::endl;
     }
 }

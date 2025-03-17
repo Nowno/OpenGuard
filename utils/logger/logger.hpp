@@ -15,7 +15,7 @@ class Logger
      * @param message The message.
      * @param save Whether to save the message to the log file.
      */
-    void Log(const std::string& type, const std::string& message, bool save = true);
+    void Log(const std::string_view &type, const std::string_view &message, bool save = true);
 
     /**
      * @brief Get the singleton instance of the Logger.

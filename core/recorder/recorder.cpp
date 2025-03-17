@@ -3,6 +3,7 @@
 #include <sstream>
 #include <opencv2/videoio.hpp>
 #include <unordered_set>
+#include <future>
 
 #include "recorder.hpp"
 #include "../hook_manager/hook_manager.hpp"
@@ -131,7 +132,7 @@ void Recorder::Stop()
     recording = false;
 
     /// Send the video to be converted in a separate thread to not block the main thread
-    std::thread(&Recorder::ConvertToMP4, this, current_filename, this->flagged_object).detach();
+    std::async(std::launch::async, &Recorder::ConvertToMP4, this, current_filename, this->flagged_object).share();
 
     /// Reset the flagged object
     this->flagged_object = ObjectDetector::Object::NONE;
@@ -201,10 +202,9 @@ void Recorder::ConvertToMP4(const std::string& file, ObjectDetector::Object obje
     /// Execute the on_converted hooks
     HookManager::GetInstance().ExecuteHooks("on_save", {{"file", out_file}, {"object", ObjectDetector::GetObjectString(object_detected)}});
 
-
     /// If there is a next file, start converting it
     if (!next_file.first.empty())
     {
-        std::thread(&Recorder::ConvertToMP4, this, next_file.first, next_file.second).detach();
+        std::async(std::launch::async, &Recorder::ConvertToMP4, this, next_file.first, next_file.second).share();
     }
 }

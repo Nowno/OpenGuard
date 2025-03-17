@@ -19,14 +19,15 @@ class HookManager
     struct Hook
     {
         /// Constructors for both native and external hooks
-        Hook(HookType type, const std::function<int(const std::unordered_map<std::string, std::string>& args)>& callback, bool blocking = false, int cooldown = 0) : type(type), callback(callback), blocking(blocking), cooldown(cooldown) {}
-        Hook(HookType type, const std::string& _script_path, bool blocking = false, int cooldown = 0) : type(type), script_path(_script_path), blocking(blocking), cooldown(cooldown) {}
+        Hook(HookType type, const std::function<int(const std::unordered_map<std::string, std::string>& args)>& callback, bool blocking = false, int cooldown = 0, bool one_time = false) : type(type), callback(callback), blocking(blocking), cooldown(cooldown), one_time(one_time){}
+        Hook(HookType type, const std::string& _script_path, bool blocking = false, int cooldown = 0, bool one_time = false) : type(type), script_path(_script_path), blocking(blocking), cooldown(cooldown), one_time(one_time){}
 
         HookType type;
         std::function<int(const std::unordered_map<std::string, std::string>& args)> callback; /// Exclusive to native hooks
         std::string script_path;                                                               /// Exclusive to external hooks
         bool blocking;
         int cooldown = 0;
+        bool one_time = false;
         int last_executed = 0;
     };
 
@@ -98,8 +99,16 @@ class HookManager
      */
     int GetCooldown(const std::string& hook_path);
 
-    std::string AppendOutput(const std::string& event, const std::string& output);
+    /**
+     * @brief Append output to the hook output.
+     * @param event The name of the event.
+     * @param output The output to append.
+     * @return The new output of the hook.
+     */
+    void AppendOutput(const std::string& event, const std::string& output);
 
+    /// Allow CommandProcessor to access private members, as we need it to append output
+    friend class CommandProcessor;
 };
 
 

@@ -2,6 +2,7 @@
 
 #include "ws_server.hpp"
 #include "../../utils/logger/logger.hpp"
+#include "../../utils/config_manager/config_manager.hpp"
 #include "../command_processor/command_processor.hpp"
 
 using json = nlohmann::json;
@@ -21,9 +22,11 @@ WSServer::WSServer()
 
     wsServer.clear_access_channels(websocketpp::log::alevel::all);
 
-    wsServer.listen(9002);
+    int server_port = ConfigManager::GetInstance().GetConfig<int>("server_port");
+
+    wsServer.listen(server_port);
     wsServer.start_accept();
-    Logger::GetInstance().Log("INFO", "WebSocket Server started on ws://localhost:9002");
+    Logger::GetInstance().Log("INFO", "WebSocket Server started on ws://localhost:" + std::to_string(server_port));
 }
 
 
@@ -83,6 +86,8 @@ void WSServer::OnMessage(websocketpp::connection_hdl hdl, websocketpp::server<we
     Logger::GetInstance().Log("INFO", "Received command: " + command);
 
     auto response = CommandProcessor::GetInstance().Process(command);
+
+    printf("response: %s\n", response.c_str());
 
     if (!authenticated)
     {
