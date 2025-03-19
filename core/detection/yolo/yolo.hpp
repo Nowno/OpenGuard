@@ -59,7 +59,7 @@ class YOLODetector : public ObjectDetector
     int call_count;
 
     std::unique_ptr<WorkerThread<cv::Mat, DetectionResult>> worker_thread; /// Worker thread to run detection on
-    Object last_detection;
+    Object last_detection = Object::NONE;                                   /// The last detected object
     std::mutex detection_mutex;                                            /// Mutex to protect the detection result
 
 

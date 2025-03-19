@@ -75,7 +75,9 @@ void WSServer::OnClose(websocketpp::connection_hdl hdl)
 {
     if (client && client.value().lock() == hdl.lock())
     {
+        this->authenticated = false;
         Logger::GetInstance().Log("INFO", "Client disconnected.");
+        CommandProcessor::GetInstance().SetStreaming(false);
         client.reset();
     }
 }

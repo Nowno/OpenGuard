@@ -11,8 +11,8 @@ find_package(OpenCV REQUIRED COMPONENTS)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_library(websocketpp INTERFACE)
-target_include_directories(websocketpp INTERFACE ${CMAKE_SOURCE_DIR}/utils/libs)
+add_library(libs INTERFACE)
+target_include_directories(libs INTERFACE ${CMAKE_SOURCE_DIR}/utils/libs)
 
 # Add the executable
 add_executable(OpenGuard main.cpp
@@ -48,7 +48,7 @@ add_executable(OpenGuard main.cpp
 
 
 # Link the OpenCV libraries
-target_link_libraries(OpenGuard ${OpenCV_LIBS} websocketpp)
+target_link_libraries(OpenGuard ${OpenCV_LIBS} libs)
 
 # Include OpenCV headers
 include_directories(${OpenCV_INCLUDE_DIRS})

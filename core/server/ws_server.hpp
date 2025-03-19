@@ -17,6 +17,7 @@ class WSServer
 
     void Poll();
     void Send(const std::string& message);
+    bool GetAuthenticated() const { return authenticated; }
 
     private:
     WSServer();

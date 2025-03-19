@@ -302,7 +302,7 @@ ObjectDetector::Object YOLODetector::Detect(const cv::Mat &frame)
     {
         std::lock_guard<std::mutex> lock(detection_mutex);
 
-        if (!result.class_ids.empty()) /// Make sure something was written to the result
+        if (!result.class_ids.empty() && result.class_ids[0] < class_names.size())
         {
             last_detection = ObjectDetector::GetObjectFromString(class_names[result.class_ids[0]]);
 

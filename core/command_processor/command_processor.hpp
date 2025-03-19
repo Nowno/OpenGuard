@@ -15,6 +15,8 @@ class CommandProcessor
     }
 
     std::string Process(const std::string& command);
+    void SetStreaming(bool streaming);
+    bool GetStreaming() const { return streaming; }
 
     private:
     CommandProcessor();
@@ -26,11 +28,14 @@ class CommandProcessor
 
     std::string InvokeCommand(const std::string& command_type, const std::string& command_args);
 
+
     ////////////////////// Commands //////////////////////
     std::string Login(const std::string& args);
-    std::string Pause(const std::string& args);
-    std::string Restart(const std::string& args);
+    std::string PauseSystem(const std::string& args);
     std::string Snapshot(const std::string& args);
+    std::string Restart(const std::string& args);
+
+    bool streaming = false; /// To avoid registering the hook multiple times
 
     std::unordered_map<std::string, std::string (CommandProcessor::*)(const std::string&)> command_map;
 };

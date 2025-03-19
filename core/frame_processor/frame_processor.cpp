@@ -2,6 +2,7 @@
 #include "../../utils/config_manager/config_manager.hpp"
 #include "../../utils/logger/logger.hpp"
 #include "../hook_manager/hook_manager.hpp"
+#include <b64/base64.hpp>
 
 /**
  * @brief Constructor: Initializes the frame processor.
@@ -64,7 +65,7 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
 
     /// Run motion detection
     bool motion_detected = motion_detector->Detect(frame);
-    bool is_paused = time(0) - pause_system < 0;
+    bool is_paused = 0 && time(0) - pause_system < 0;
 
     if (motion_detected && !is_paused)
     {
@@ -87,8 +88,6 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
             /// Again, to avoid spamming the logs, only log if we haven't started recording yet
             if (!recorder->IsRecording())
                 HookManager::GetInstance().ExecuteHooks("on_object", {{"object", ObjectDetector::GetObjectString(object_detected)}});
-
-            Logger::GetInstance().Log("INFO", "Object detected: " + ObjectDetector::GetObjectString(object_detected), false);
         }
         else
         {
@@ -101,6 +100,7 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
     {
         motion_state.SetState(false);
     }
+
 
     /// Render the overlay, before recording so that the overlay is also recorded
     overlay_renderer->Render(frame, cap.GetFrameSize());
@@ -126,7 +126,17 @@ bool FrameProcessor::RenderFrame(cv::Mat& processed_frame)
         return false;
     }
 
-    /// Render the processed frame
+    /// To avoid unnecessarily encoding the frame, only do so if there are hooks registered
+    if (HookManager::GetInstance().HasHook("on_render"))
+    {
+        std::vector<uchar> buffer;
+        cv::imencode(".jpg", processed_frame, buffer);
+        std::string base64_frame = base64::to_base64(std::string(buffer.begin(), buffer.end()));
+
+        HookManager::GetInstance().ExecuteHooks("on_render", {{"frame", base64_frame}});
+    }
+
+    /// Render the processed frame. This should be commented out for performance.
     cv::imshow("Frame", processed_frame);
 
     return true;

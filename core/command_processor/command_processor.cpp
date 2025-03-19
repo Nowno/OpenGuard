@@ -1,8 +1,12 @@
-#include "command_processor.hpp"
 #include <json/json.hpp>
+#include <opencv2/opencv.hpp>
+
+#include "command_processor.hpp"
 #include "../../utils/logger/logger.hpp"
 #include "../../utils/config_manager/config_manager.hpp"
+#include "../../utils/utils.hpp"
 #include "../hook_manager/hook_manager.hpp"
+#include "../server/ws_server.hpp"
 using json = nlohmann::json;
 
 CommandProcessor::CommandProcessor()
@@ -10,7 +14,8 @@ CommandProcessor::CommandProcessor()
     command_map =
     {
         {"auth", &CommandProcessor::Login},
-        {"pause", &CommandProcessor::Pause}
+        {"pause_system", &CommandProcessor::PauseSystem},
+        {"snapshot", &CommandProcessor::Snapshot}
     };
 
 }
@@ -74,6 +79,10 @@ nlohmann::json CommandProcessor::ValidateArgs(const std::string &args, const std
     return args_json;
 }
 
+void CommandProcessor::SetStreaming(bool streaming)
+{
+    this->streaming = streaming;
+}
 
 std::string CommandProcessor::Login(const std::string &args)
 {
@@ -88,16 +97,56 @@ std::string CommandProcessor::Login(const std::string &args)
     return "failed";
 }
 
-std::string CommandProcessor::Pause(const std::string &args)
+std::string CommandProcessor::PauseSystem(const std::string &args)
 {
     json args_json = ValidateArgs(args, {"duration"});
 
     if (args_json.empty())
         return "failed";
 
-    std::string duration = args_json["duration"].get<std::string>();
+    args_json = args_json["duration"];
+    std::string duration = args_json.is_string() ? args_json.get<std::string>() : std::to_string(args_json.get<int>());
 
-    HookManager::GetInstance().AppendOutput("on_motion", "{\"pause_system\": " + duration + "}");
+    //HookManager::GetInstance().AppendOutput("on_motion", "{\"pause_system\": " + duration + "}");
 
-    return "paused";
+    return "success";
+}
+
+std::string CommandProcessor::Snapshot(const std::string &args)
+{
+    json args_json = ValidateArgs(args, {"status"});
+
+    if (args_json.empty())
+        return "failed";
+
+    if (args_json["status"] == "stop")
+    {
+        HookManager::GetInstance().ClearEventHooks("on_render");
+        streaming = false;
+        return "success";
+    }
+
+    bool screenshot = args_json["status"] == "screenshot";
+
+    auto snapshot_hook = HookManager::Hook(HookManager::HookType::NATIVE, [&, screenshot](const std::unordered_map<std::string, std::string>& args) -> std::string
+    {
+        json response = {{"type", (screenshot ? "screenshot" : "stream")}, {"image", args.at("frame")}};
+
+        WSServer::GetInstance().Send(response.dump());
+
+        if (CommandProcessor::GetInstance().GetStreaming() == false)
+        {
+            HookManager::GetInstance().ClearEventHooks("on_render");
+        }
+
+        return "";
+    }, true, 0, screenshot);
+
+    if (!streaming)
+    {
+        HookManager::GetInstance().RegisterHook("on_render", snapshot_hook);
+        streaming = true;
+    }
+
+    return "success";
 }

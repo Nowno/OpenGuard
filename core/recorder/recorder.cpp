@@ -57,13 +57,14 @@ void Recorder::AddFrame(const cv::Mat& frame, bool motion_detected, ObjectDetect
     /// If the object is record-worthy, set the flagged object to the detected object (to be later passed to the converter)
     if (object_detected_flagged)
         flagged_object = object_detected;
+    else
+        flagged_object = ObjectDetector::Object::NONE;
 
     //// If motion is detected and the object is record-worthy, start recording
     if (motion_detected && this->flagged_object != ObjectDetector::Object::NONE)
     {
         if (!recording)
         {
-
             Logger::GetInstance().Log("INFO", "Motion detected, object: " + ObjectDetector::GetObjectString(object_detected));
             Start();
         }
@@ -132,7 +133,7 @@ void Recorder::Stop()
     recording = false;
 
     /// Send the video to be converted in a separate thread to not block the main thread
-    std::async(std::launch::async, &Recorder::ConvertToMP4, this, current_filename, this->flagged_object).share();
+    std::thread(&Recorder::ConvertToMP4, this, current_filename, this->flagged_object).detach();
 
     /// Reset the flagged object
     this->flagged_object = ObjectDetector::Object::NONE;
@@ -205,6 +206,6 @@ void Recorder::ConvertToMP4(const std::string& file, ObjectDetector::Object obje
     /// If there is a next file, start converting it
     if (!next_file.first.empty())
     {
-        std::async(std::launch::async, &Recorder::ConvertToMP4, this, next_file.first, next_file.second).share();
+       std::thread(&Recorder::ConvertToMP4, this, next_file.first, next_file.second).detach();
     }
 }

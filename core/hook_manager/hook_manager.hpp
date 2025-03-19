@@ -19,16 +19,21 @@ class HookManager
     struct Hook
     {
         /// Constructors for both native and external hooks
-        Hook(HookType type, const std::function<int(const std::unordered_map<std::string, std::string>& args)>& callback, bool blocking = false, int cooldown = 0, bool one_time = false) : type(type), callback(callback), blocking(blocking), cooldown(cooldown), one_time(one_time){}
+        Hook(HookType type, const std::function<std::string(const std::unordered_map<std::string, std::string>& args)>& callback, bool blocking = false, int cooldown = 0, bool one_time = false) : type(type), callback(callback), blocking(blocking), cooldown(cooldown), one_time(one_time){}
         Hook(HookType type, const std::string& _script_path, bool blocking = false, int cooldown = 0, bool one_time = false) : type(type), script_path(_script_path), blocking(blocking), cooldown(cooldown), one_time(one_time){}
 
         HookType type;
-        std::function<int(const std::unordered_map<std::string, std::string>& args)> callback; /// Exclusive to native hooks
-        std::string script_path;                                                               /// Exclusive to external hooks
+        std::function<std::string(const std::unordered_map<std::string, std::string>& args)> callback; /// Exclusive to native hooks
+        std::string script_path;                                                                       /// Exclusive to external hooks
         bool blocking;
         int cooldown = 0;
         bool one_time = false;
         int last_executed = 0;
+
+        bool operator==(const Hook& other) const
+        {
+            return type == other.type && (type == HookType::NATIVE ? callback.target_type() == other.callback.target_type() : script_path == other.script_path);
+        }
     };
 
     /// Singleton access of the HookManager instance
@@ -65,6 +70,19 @@ class HookManager
      * @return The value for the given key in the output of the hook.
      */
     std::string GetHookOutput(const std::string& event, const std::string& key);
+
+    /**
+     * @brief Clear the output of a hook.
+     * @param event The name of the event.
+     */
+    void ClearEventHooks(const std::string& event);
+
+    /**
+     * @brief Check if a hook exists.
+     * @param event The name of the event.
+     * @return Whether the hook exists or not.
+     */
+    bool HasHook(const std::string& event);
 
     private:
     std::unordered_map<std::string, std::vector<Hook>> hooks;  /// Hook table

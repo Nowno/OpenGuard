@@ -42,7 +42,8 @@ class ObjectDetector
             case Object::PERSON: return "person";
             case Object::PET:    return "pet";
             case Object::CAR:    return "car";
-            default:             return "n/a";
+            case Object::NONE:   return "none";
+            default:             return "none";
         }
     }
 

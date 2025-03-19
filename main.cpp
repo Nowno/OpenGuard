@@ -38,9 +38,13 @@ int main()
     hook_manager.RegisterHooks("hooks/on_fatal");
 
     /// 2 - Register native hooks manually
-    hook_manager.RegisterHook("on_hook", HookManager::Hook(HookManager::HookType::NATIVE, [](const std::unordered_map<std::string, std::string>& args) -> int {
-        Logger::GetInstance().Log("INFO", args.at("event") + " events called.");
-        return 0;
+    hook_manager.RegisterHook("on_hook", HookManager::Hook(HookManager::HookType::NATIVE, [](const std::unordered_map<std::string, std::string>& args) -> std::string
+    {
+        /// This hook may be called on every frame, so we'll ignore it.
+        if (!(args.at("event") == "on_render"))
+            Logger::GetInstance().Log("INFO", args.at("event") + " events called.");
+
+        return "";
     }, false));
 
     /// 3 - Execute on_start hooks
@@ -53,20 +57,13 @@ int main()
     {
         auto frame = cap.GetFrame();
 
-        //auto motion_hook_output = hook_manager.GetHookOutput("on_motion", "pause"); t
+        fp.ProcessFrame(frame);
 
-        /// If the motion hook output is not empty and the cooldown has not expired, skip the frame
-        /*if (!motion_hook_output.empty() && std::stoi(motion_hook_output) - time(0) > 0)
-            continue;*/
+        if (!fp.RenderFrame(frame))
+            break;
 
-        //fp.ProcessFrame(frame);
-
-        //if (!fp.RenderFrame(frame))
-          //  break;
-
-        //cap.Update();
+        cap.Update();
         WSServer::GetInstance().Poll();
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     return 0;

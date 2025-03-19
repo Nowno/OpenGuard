@@ -1,0 +1,11 @@
+{
+  "web": {
+    "port": 3000
+  },
+  "ws": {
+    "port": 3001,
+    "openguard_port": 9002,
+    "username": "admin",
+    "password": "nimda"
+  }
+}

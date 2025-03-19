@@ -85,7 +85,7 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
         if (on_hook.blocking)
             on_hook.callback(args);
         else
-            std::async(std::launch::async, on_hook.callback, args).share();
+            std::thread(on_hook.callback, args).detach();
     }
 
     for (Hook &hook: hooks[event])
@@ -97,10 +97,11 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
         /// If the hook is native, it is as easy as calling the lambda
         if (hook.type == HookType::NATIVE)
         {
-            if (hook.blocking)                                      /// In the case of blocking hooks, execute them synchronously and capture the output
-                AppendOutput(event, std::to_string(hook.callback(args)));
+            if (hook.blocking)                                              /// In the case of blocking hooks, execute them synchronously and capture the output
+                AppendOutput(event, hook.callback(args));
             else
-                std::async(std::launch::async, hook.callback, args).share();/// For non-blocking we can kind of just run them and forget about them
+                std::thread(hook.callback, args).detach();                  /// For non-blocking we can kind of just run them and forget about them
+
         }
         else if (hook.type == HookType::EXTERNAL)
         {
@@ -127,19 +128,27 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
             }
             else
             {
-                /// And as before, fire and forget
-                std::async(std::launch::async, [&, event, command]()
+
+                std::thread([&, event, command]()
                 {
                     std::string result = OpenGuard::Utils::ExecuteCommand(command);
 
                     std::lock_guard<std::mutex> lock(output_mutex);
                     AppendOutput(event, result);
-                }).share();
+                }).detach();
             }
         }
 
         /// Update the last execution time
         hook.last_executed = time(nullptr);
+
+        if (hook.one_time)
+        {
+            /// If the hook is one-time, remove it from the list
+            std::lock_guard<std::mutex> lock(hook_mutex);
+            auto& hook_vector = hooks[event];
+            hook_vector.erase(std::remove_if(hook_vector.begin(),hook_vector.end(),[&hook](const HookManager::Hook& h){ return h == hook;}),hook_vector.end());
+        }
     }
 
 }
@@ -251,4 +260,22 @@ void HookManager::AppendOutput(const std::string& event, const std::string& outp
     }
 
    this->hook_outputs[event] = data.dump();
+}
+
+/**
+ * @brief Check if a hook exists.
+ */
+bool HookManager::HasHook(const std::string& event)
+{
+    std::lock_guard<std::mutex> lock(hook_mutex);
+    return hooks.find(event) != hooks.end();
+}
+
+/**
+ * @brief Clear the hooks for a given event.
+ */
+void HookManager::ClearEventHooks(const std::string &event)
+{
+    std::lock_guard<std::mutex> lock(hook_mutex);
+    hooks[event].clear();
 }
