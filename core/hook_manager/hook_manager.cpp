@@ -55,11 +55,24 @@ void HookManager::RegisterHooks(const std::string& hook_path)
 /**
  * @brief Individual registers a hook.
  */
-void HookManager::RegisterHook(const std::string& event, const Hook& hook)
+HookManager::HookHandle HookManager::RegisterHook(const std::string& event, const Hook& hook)
 {
     /// Most commonly used for native hooks.
     std::lock_guard<std::mutex> lock(hook_mutex);
     hooks[event].push_back(hook);
+
+    return hook.id;
+}
+
+/**
+ * @brief Unregister a hook.
+ */
+void HookManager::UnregisterHook(const std::string& event, HookHandle handle)
+{
+    printf("Unregistering hook for event: %s\n", event.c_str());
+    std::lock_guard<std::mutex> lock(hook_mutex);
+    auto& hook_list = hooks[event];
+    hook_list.erase(std::remove_if(hook_list.begin(), hook_list.end(),[&](const Hook& hook) { return hook.id == handle; }),hook_list.end());
 }
 
 /**
@@ -145,9 +158,7 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
         if (hook.one_time)
         {
             /// If the hook is one-time, remove it from the list
-            std::lock_guard<std::mutex> lock(hook_mutex);
-            auto& hook_vector = hooks[event];
-            hook_vector.erase(std::remove_if(hook_vector.begin(),hook_vector.end(),[&hook](const HookManager::Hook& h){ return h == hook;}),hook_vector.end());
+            UnregisterHook(event, hook.id);
         }
     }
 

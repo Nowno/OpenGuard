@@ -15,17 +15,17 @@ WSServer& WSServer::GetInstance()
 
 WSServer::WSServer()
 {
-    wsServer.init_asio();
-    wsServer.set_open_handler(std::bind(&WSServer::OnOpen, this, std::placeholders::_1));
-    wsServer.set_close_handler(std::bind(&WSServer::OnClose, this, std::placeholders::_1));
-    wsServer.set_message_handler(std::bind(&WSServer::OnMessage, this, std::placeholders::_1, std::placeholders::_2));
+    ws_server.init_asio();
+    ws_server.set_open_handler(std::bind(&WSServer::OnOpen, this, std::placeholders::_1));
+    ws_server.set_close_handler(std::bind(&WSServer::OnClose, this, std::placeholders::_1));
+    ws_server.set_message_handler(std::bind(&WSServer::OnMessage, this, std::placeholders::_1, std::placeholders::_2));
 
-    wsServer.clear_access_channels(websocketpp::log::alevel::all);
+    ws_server.clear_access_channels(websocketpp::log::alevel::all);
 
     int server_port = ConfigManager::GetInstance().GetConfig<int>("server_port");
 
-    wsServer.listen(server_port);
-    wsServer.start_accept();
+    ws_server.listen(server_port);
+    ws_server.start_accept();
     Logger::GetInstance().Log("INFO", "WebSocket Server started on ws://localhost:" + std::to_string(server_port));
 }
 
@@ -37,11 +37,11 @@ void WSServer::Poll()
         if (auth_timer.HasElapsed(6))
         {
             Logger::GetInstance().Log("ERROR", "Client failed to authenticate within 5 seconds, closing connection.");
-            wsServer.close(client.value(), websocketpp::close::status::policy_violation, "Authentication timeout.");
+            ws_server.close(client.value(), websocketpp::close::status::policy_violation, "Authentication timeout.");
             client.reset();
         }
     }
-    wsServer.poll();
+    ws_server.poll();
 }
 
 void WSServer::OnOpen(websocketpp::connection_hdl hdl)
@@ -51,7 +51,7 @@ void WSServer::OnOpen(websocketpp::connection_hdl hdl)
         Logger::GetInstance().Log("INFO", "Existing client disconnected, accepting new connection.");
         try
         {
-            wsServer.close(client.value(), websocketpp::close::status::going_away, "Reconnecting...");
+            ws_server.close(client.value(), websocketpp::close::status::going_away, "Reconnecting...");
         }
         catch (const websocketpp::exception& e)
         {
@@ -77,10 +77,12 @@ void WSServer::OnClose(websocketpp::connection_hdl hdl)
     {
         this->authenticated = false;
         Logger::GetInstance().Log("INFO", "Client disconnected.");
-        CommandProcessor::GetInstance().SetStreaming(false);
+        CommandProcessor::GetInstance().SetStreaming("snapshot", false);
+        CommandProcessor::GetInstance().SetStreaming("log", false);
         client.reset();
     }
 }
+
 
 void WSServer::OnMessage(websocketpp::connection_hdl hdl, websocketpp::server<websocketpp::config::asio>::message_ptr msg)
 {
@@ -96,13 +98,14 @@ void WSServer::OnMessage(websocketpp::connection_hdl hdl, websocketpp::server<we
         if (response == "authenticated")
         {
             Logger::GetInstance().Log("INFO", "Client authenticated.");
-            //send infos
+            json response = {{"type", "authenticated"}, {"message", ConfigManager::GetInstance().GetFullConfig()}};
+            Send(response.dump());
             authenticated = true;
         }
         else
         {
             Logger::GetInstance().Log("ERROR", "Client failed to authenticate.");
-            wsServer.close(hdl, websocketpp::close::status::policy_violation, "Authentication failed.");
+            ws_server.close(hdl, websocketpp::close::status::policy_violation, "Authentication failed.");
             client.reset();
             return;
         }
@@ -120,6 +123,21 @@ void WSServer::Send(const std::string& message)
 
     OpenGuard::Utils::SafeCall([&]()
     {
-        wsServer.send(client.value(), message, websocketpp::frame::opcode::text);
+        ws_server.send(client.value(), message, websocketpp::frame::opcode::text);
     });
+}
+
+void WSServer::CloseServer()
+{
+    ws_server.stop_listening();
+
+    if (client)
+    {
+        ws_server.close(client.value(), websocketpp::close::status::going_away, "Server shutting down.");
+        client.reset();
+    }
+
+    ws_server.stop();
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 }

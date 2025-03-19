@@ -4,6 +4,7 @@
 #include <string>
 #include <fstream>
 #include <mutex>
+#include <deque>
 
 class Logger
 {
@@ -18,6 +19,12 @@ class Logger
     void Log(const std::string_view &type, const std::string_view &message, bool save = true);
 
     /**
+     * @brief Dump the log buffer into a string.
+     * @return The log buffer.
+     */
+    std::string DumpBuffer();
+
+    /**
      * @brief Get the singleton instance of the Logger.
      * @return The Logger instance.
      */
@@ -30,7 +37,8 @@ class Logger
     private:
     std::ofstream log_file;
     std::mutex log_mutex;   /// Mutex as we may access the log file from another thread
-
+    std::deque<std::string> log_buffer;
+    static constexpr size_t MAX_LOGS = 100;
     /// Private constructors
     Logger();
     Logger(const Logger&) = delete;

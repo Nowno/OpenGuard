@@ -77,7 +77,7 @@ inline uint32_t decode(uint32_t * state, uint32_t * codep, uint8_t byte) {
   return *state;
 }
 
-/// Provides streaming UTF8 validation functionality
+/// Provides snapshot_streaming UTF8 validation functionality
 class validator {
 public:
     /// Construct and initialize the validator

@@ -62,7 +62,7 @@ public:
      * bytes processed. Bytes left unprocessed means bytes left over after the
      * final header delimiters.
      *
-     * Consume is a streaming processor. It may be called multiple times on one
+     * Consume is a snapshot_streaming processor. It may be called multiple times on one
      * request and the full headers need not be available before processing can
      * begin. If the end of the request was reached during this call to consume
      * the ready flag will be set. Further calls to consume once ready will be

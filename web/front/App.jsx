@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
-import websocket_handler from "./core/ws_handler";
+import websocket_handler from "./ws_handler";
 import LiveFeed from "./live_feed";
 import "../config/src/styles/index.css";
-
+import ConfigEditor from "./config_editor";
+import LogViewer from "./log_viewer";
+//todo cleanup
 function App()
 {
     const [backend_status, setBackendStatus] = useState("Connecting...");
@@ -10,12 +12,13 @@ function App()
     const [is_authenticated, setAuthenticated] = useState(false);
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
-
     const [pause_duration, setPauseDuration] = useState(300);
     const [custom_duration, setCustomDuration] = useState("");
     const [is_paused, setIsPaused] = useState(false);
     const [remaining_time, setRemainingTime] = useState(0);
     const [show_pause_modal, setShowPauseModal] = useState(false);
+    const [show_config_editor, setShowConfigEditor] = useState(false);
+    const [show_logs, setShowLogs] = useState(false);
 
     useEffect(() =>
     {
@@ -168,15 +171,30 @@ function App()
                 <div className={`px-4 py-2 rounded ${backend_status === "Connected" ? "bg-green-500" : "bg-red-500"}`}>
                     Backend: {backend_status}
                 </div>
-                <div className={`px-4 py-2 rounded ${backend_status === "Connected" && openguard_status === "Connected" ? "bg-green-500" : "bg-red-500"}`}>
+                <div
+                    className={`px-4 py-2 rounded ${backend_status === "Connected" && openguard_status === "Connected" ? "bg-green-500" : "bg-red-500"}`}>
                     OpenGuard: {backend_status === "Connected" ? openguard_status : "Disconnected"}
                 </div>
             </div>
 
             {/* Live Feed */}
-            <div className="border border-gray-700 w-full max-w-lg aspect-video flex items-center justify-center bg-black">
-                <LiveFeed />
+            <div
+                className="border border-gray-700 w-full max-w-lg aspect-video flex items-center justify-center bg-black">
+                <LiveFeed/>
             </div>
+
+            {/* Buttons */}
+            <div className="flex gap-4 mt-4">
+                <button
+                    onClick={() => setShowConfigEditor(true)}
+                    className="px-4 py-2 bg-blue-500 rounded hover:bg-blue-600"
+                >
+                    Edit Config ⚙️
+                </button>
+            </div>
+
+            {/* Config Editor Modal */}
+            <ConfigEditor isOpen={show_config_editor} onClose={() => setShowConfigEditor(false)}/>
 
             {/* Pause System*/}
             {is_paused ? (
@@ -189,17 +207,28 @@ function App()
                     </button>
                 </div>
             ) : (
-                <button onClick={() => setShowPauseModal(true)} className="mt-4 px-4 py-2 bg-yellow-500 rounded hover:bg-yellow-600">
+                <button onClick={() => setShowPauseModal(true)}
+                        className="mt-4 px-4 py-2 bg-yellow-500 rounded hover:bg-yellow-600">
                     Pause Motion Detection ⏸️
                 </button>
             )}
+            <div className="flex flex-col items-center p-4 min-h-screen bg-gray-900 text-white">
 
+                {/* Open Logs Button */}
+                <button onClick={() => setShowLogs(true)} className="px-4 py-2 bg-gray-700 rounded hover:bg-gray-800">
+                    View Logs 📜
+                </button>
+
+                {/* Log Viewer Modal */}
+                <LogViewer isOpen={show_logs} onClose={() => setShowLogs(false)}/>
+            </div>
             {/* Pause Modal */}
             {show_pause_modal && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
                     <div className="bg-gray-800 p-4 rounded-lg">
                         <h2 className="text-lg font-semibold">Select Pause Duration</h2>
-                        <select className="p-2 bg-gray-800 text-white rounded w-full my-2" value={pause_duration} onChange={(e) => setPauseDuration(e.target.value)}>
+                        <select className="p-2 bg-gray-800 text-white rounded w-full my-2" value={pause_duration}
+                                onChange={(e) => setPauseDuration(e.target.value)}>
                             <option value="300">5 minutes</option>
                             <option value="600">10 minutes</option>
                             <option value="1800">30 minutes</option>
@@ -207,10 +236,13 @@ function App()
                         </select>
 
                         {pause_duration === "custom" && (
-                            <input type="number" className="p-2 bg-gray-800 text-white rounded w-full mb-2" placeholder="Enter minutes" value={custom_duration} onChange={(e) => setCustomDuration(e.target.value)} />
+                            <input type="number" className="p-2 bg-gray-800 text-white rounded w-full mb-2"
+                                   placeholder="Enter minutes" value={custom_duration}
+                                   onChange={(e) => setCustomDuration(e.target.value)}/>
                         )}
 
-                        <button onClick={HandlePause} className="px-4 py-2 bg-yellow-500 rounded hover:bg-yellow-600 w-full">
+                        <button onClick={HandlePause}
+                                className="px-4 py-2 bg-yellow-500 rounded hover:bg-yellow-600 w-full">
                             Confirm Pause
                         </button>
                     </div>
@@ -221,3 +253,5 @@ function App()
 }
 
 export default App;
+
+//bug, logs in twice?

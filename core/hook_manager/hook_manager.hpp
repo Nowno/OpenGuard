@@ -9,31 +9,41 @@
 class HookManager
 {
     public:
+    using HookHandle = uintptr_t;
+
     enum class HookType
     {
         NATIVE,  /// C++, in the form of a lambda, requires recompilation
         EXTERNAL /// External (for now, only Python but can be extended)
     };
 
-
     struct Hook
     {
         /// Constructors for both native and external hooks
-        Hook(HookType type, const std::function<std::string(const std::unordered_map<std::string, std::string>& args)>& callback, bool blocking = false, int cooldown = 0, bool one_time = false) : type(type), callback(callback), blocking(blocking), cooldown(cooldown), one_time(one_time){}
-        Hook(HookType type, const std::string& _script_path, bool blocking = false, int cooldown = 0, bool one_time = false) : type(type), script_path(_script_path), blocking(blocking), cooldown(cooldown), one_time(one_time){}
+        Hook(HookType type, const std::function<std::string(const std::unordered_map<std::string, std::string>& args)>& callback, bool blocking = false, int cooldown = 0, bool one_time = false)
+        : type(type), callback(callback), blocking(blocking), cooldown(cooldown), one_time(one_time)
+        {
+            this->id = reinterpret_cast<HookHandle>(this);
+        }
+
+        Hook(HookType type, const std::string& _script_path, bool blocking = false, int cooldown = 0, bool one_time = false)
+        : type(type), script_path(_script_path), blocking(blocking), cooldown(cooldown), one_time(one_time)
+        {
+            this->id = reinterpret_cast<HookHandle>(this);
+        }
+
+        Hook() = default;
 
         HookType type;
         std::function<std::string(const std::unordered_map<std::string, std::string>& args)> callback; /// Exclusive to native hooks
         std::string script_path;                                                                       /// Exclusive to external hooks
+
         bool blocking;
         int cooldown = 0;
         bool one_time = false;
         int last_executed = 0;
 
-        bool operator==(const Hook& other) const
-        {
-            return type == other.type && (type == HookType::NATIVE ? callback.target_type() == other.callback.target_type() : script_path == other.script_path);
-        }
+        HookHandle id = 0;
     };
 
     /// Singleton access of the HookManager instance
@@ -54,7 +64,13 @@ class HookManager
      * @param hook_name The name of the hook.
      * @param hook The hook to register.
      */
-    void RegisterHook(const std::string& event_name, const Hook& hook);
+    HookHandle RegisterHook(const std::string& event_name, const Hook& hook);
+
+    /**
+     * @brief Unregister a hook.
+     * @param handle The handle of the hook to unregister.
+     */
+    void UnregisterHook(const std::string& event_name, HookHandle handle);
 
     /**
      * @brief Execute hooks for a given event.
@@ -125,8 +141,7 @@ class HookManager
      */
     void AppendOutput(const std::string& event, const std::string& output);
 
-    /// Allow CommandProcessor to access private members, as we need it to append output
-    friend class CommandProcessor;
+
 };
 
 

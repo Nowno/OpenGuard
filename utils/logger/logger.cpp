@@ -36,6 +36,7 @@ void Logger::Log(const std::string_view &type, const std::string_view &message, 
     if (type == "FATAL")
         HookManager::GetInstance().ExecuteHooks("on_fatal", {{"message", std::string(message)}});
 
+
     /// If we don't want to save the message, no need to proceed.
     if (!save)
         return;
@@ -45,9 +46,32 @@ void Logger::Log(const std::string_view &type, const std::string_view &message, 
         std::lock_guard<std::mutex> lock(log_mutex);
         this->log_file.write(log_message.c_str(), log_message.size());
         this->log_file.flush(); /// Flush to finalize the write
+
+        /// If the buffer is full, pop the first element.
+        if (log_buffer.size() >= MAX_LOGS)
+            log_buffer.pop_front();
+
+        /// Push the new log message to the buffer.
+        log_buffer.push_back(log_message);
+
+        HookManager::GetInstance().ExecuteHooks("on_log", {{"message", log_message}});
     }
     else
     {
         std::cerr << "[XX-XX-XXXX XX:XX:XX] [ERROR] Could not write to log file: " << message << std::endl;
     }
+}
+
+
+std::string Logger::DumpBuffer()
+{
+    std::lock_guard<std::mutex> lock(log_mutex);
+    std::string buffer;
+
+    for (const auto& log : log_buffer)
+    {
+        buffer += log + "\n";
+    }
+
+    return buffer;
 }

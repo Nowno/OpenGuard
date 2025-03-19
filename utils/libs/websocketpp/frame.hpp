@@ -737,7 +737,7 @@ inline void word_mask_exact(uint8_t* data, size_t length, const
 /// Circular word aligned mask/unmask
 /**
  * Performs a circular mask/unmask in word sized chunks using pre-prepared keys
- * that store state between calls. Best for providing streaming masking or
+ * that store state between calls. Best for providing snapshot_streaming masking or
  * unmasking of small chunks at a time of a larger message. Requires that the
  * underlying allocated size of the data buffer be a multiple of the word size.
  * Data in the buffer after `length` will be overwritten only with the same
@@ -809,7 +809,7 @@ inline size_t word_mask_circ(uint8_t* data, size_t length, size_t prepared_key){
 /// Circular byte aligned mask/unmask
 /**
  * Performs a circular mask/unmask in byte sized chunks using pre-prepared keys
- * that store state between calls. Best for providing streaming masking or
+ * that store state between calls. Best for providing snapshot_streaming masking or
  * unmasking of small chunks at a time of a larger message. Requires that the
  * underlying allocated size of the data buffer be a multiple of the word size.
  * Data in the buffer after `length` will be overwritten only with the same

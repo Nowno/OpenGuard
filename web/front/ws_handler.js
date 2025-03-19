@@ -8,6 +8,7 @@ class WebSocketHandler
         this.is_authenticated = false;
         this.is_connecting = false;
         this.status_callback = null;
+        this.og_config = null;
         this.message_callbacks = [];
         this.close_callbacks = [];
     }
@@ -43,7 +44,6 @@ class WebSocketHandler
 
                 if (data.type === "login_success")
                 {
-                    console.log("🔓 Successfully logged in.");
                     this.is_authenticated = true;
                 }
                 else if (data.type === "error" && data.message === "Unauthorized")
@@ -51,12 +51,16 @@ class WebSocketHandler
                     this.is_authenticated = false;
                     this.status_callback("Unauthorized");
                 }
+                else if (data.type === "config")
+                {
+                    this.og_config = data.config;
+                }
 
                 this.message_callbacks.forEach(callback => callback(data));
             }
             catch (error)
             {
-                console.error("⚠️ Error parsing WebSocket message:", error);
+                console.error("⚠️ WebSocket Error:", error);
             }
         };
 
@@ -84,7 +88,6 @@ class WebSocketHandler
     {
         if (!this.websocket || this.websocket.readyState !== WebSocket.OPEN) return;
 
-        console.log("🔐 Sending WebSocket login...");
         this.websocket.send(JSON.stringify({ type: "login", username, password }));
     }
 

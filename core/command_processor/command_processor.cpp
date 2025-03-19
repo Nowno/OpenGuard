@@ -5,7 +5,6 @@
 #include "../../utils/logger/logger.hpp"
 #include "../../utils/config_manager/config_manager.hpp"
 #include "../../utils/utils.hpp"
-#include "../hook_manager/hook_manager.hpp"
 #include "../server/ws_server.hpp"
 using json = nlohmann::json;
 
@@ -15,7 +14,10 @@ CommandProcessor::CommandProcessor()
     {
         {"auth", &CommandProcessor::Login},
         {"pause_system", &CommandProcessor::PauseSystem},
-        {"snapshot", &CommandProcessor::Snapshot}
+        {"snapshot", &CommandProcessor::Snapshot},
+        {"restart", &CommandProcessor::Restart},
+        {"set_config", &CommandProcessor::Restart},
+        {"get_logs", &CommandProcessor::GetLogs}
     };
 
 }
@@ -79,9 +81,35 @@ nlohmann::json CommandProcessor::ValidateArgs(const std::string &args, const std
     return args_json;
 }
 
-void CommandProcessor::SetStreaming(bool streaming)
+void CommandProcessor::SetStreaming(const std::string& stream, bool streaming)
 {
-    this->streaming = streaming;
+    if (stream == "snapshot")
+    {
+        this->snapshot_streaming = streaming;
+    }
+    else if (stream == "log")
+    {
+        this->log_streaming = streaming;
+    }
+}
+
+bool CommandProcessor::GetStreaming(const std::string& stream)
+{
+    return stream == "snapshot" ? this->snapshot_streaming : this->log_streaming;
+}
+
+HookManager::HookHandle CommandProcessor::GetHookID(CommandProcessor::Hooks hook)
+{
+    if (hook == CommandProcessor::Hooks::SNAPSHOT)
+    {
+        return this->snapshot_hook_id;
+    }
+    else if (hook == CommandProcessor::Hooks::LOG)
+    {
+        return this->log_hook_id;
+    }
+
+    return 0;
 }
 
 std::string CommandProcessor::Login(const std::string &args)
@@ -119,34 +147,91 @@ std::string CommandProcessor::Snapshot(const std::string &args)
     if (args_json.empty())
         return "failed";
 
-    if (args_json["status"] == "stop")
+    std::string status = args_json["status"].get<std::string>();
+    bool screenshot = status == "screenshot";
+
+    if (status == "stop" && snapshot_streaming)
     {
-        HookManager::GetInstance().ClearEventHooks("on_render");
-        streaming = false;
+        HookManager::GetInstance().UnregisterHook("on_render", snapshot_hook_id);
+        snapshot_streaming = false;
         return "success";
     }
 
-    bool screenshot = args_json["status"] == "screenshot";
-
-    auto snapshot_hook = HookManager::Hook(HookManager::HookType::NATIVE, [&, screenshot](const std::unordered_map<std::string, std::string>& args) -> std::string
+    auto snapshot_hook = HookManager::Hook(HookManager::HookType::NATIVE, [screenshot](const std::unordered_map<std::string, std::string>& args) -> std::string
     {
-        json response = {{"type", (screenshot ? "screenshot" : "stream")}, {"image", args.at("frame")}};
+        json response = {{"type", (screenshot ? "screenshot" : "snapshot_stream")}, {"image", args.at("frame")}};
 
         WSServer::GetInstance().Send(response.dump());
 
-        if (CommandProcessor::GetInstance().GetStreaming() == false)
+        if (!CommandProcessor::GetInstance().GetStreaming("snapshot"))
         {
-            HookManager::GetInstance().ClearEventHooks("on_render");
+            auto hook_id = CommandProcessor::GetInstance().GetHookID(Hooks::SNAPSHOT);
+            HookManager::GetInstance().UnregisterHook("on_render", hook_id);
         }
 
         return "";
     }, true, 0, screenshot);
 
-    if (!streaming)
+    if (!snapshot_streaming)
     {
-        HookManager::GetInstance().RegisterHook("on_render", snapshot_hook);
-        streaming = true;
+        this->snapshot_hook_id = HookManager::GetInstance().RegisterHook("on_render", snapshot_hook);
+        snapshot_streaming = true;
     }
 
     return "success";
+}
+
+std::string CommandProcessor::GetLogs(const std::string &args)
+{
+    json args_json = ValidateArgs(args, {"type"});
+
+    if (args_json.empty())
+        return "failed";
+
+    auto log_type = args_json["type"].get<std::string>();
+
+    if (log_type == "dump")
+    {
+        json response = {{"type", "log_dump"}, {"message", Logger::GetInstance().DumpBuffer()}};
+        WSServer::GetInstance().Send(response.dump());
+    }
+    else if (log_type == "stream_start")
+    {
+        auto log_hook = HookManager::Hook(HookManager::HookType::NATIVE, [](const std::unordered_map<std::string, std::string>& args) -> std::string
+        {
+            json response = {{"type", "log"}, {"message", args.at("message")}};
+            WSServer::GetInstance().Send(response.dump());
+
+            if (!CommandProcessor::GetInstance().GetStreaming("log"))
+            {
+                auto hook_id = CommandProcessor::GetInstance().GetHookID(Hooks::LOG);
+                HookManager::GetInstance().UnregisterHook("on_log", hook_id);
+            }
+
+            return "";
+        }, true, 0, false);
+
+        if (!CommandProcessor::GetInstance().GetStreaming("log"))
+        {
+            this->log_hook_id = HookManager::GetInstance().RegisterHook("on_log", log_hook);
+            log_streaming = true;
+        }
+    }
+    else if (log_type == "stream_stop")
+    {
+        HookManager::GetInstance().UnregisterHook("on_log", log_hook_id);
+        log_streaming = false;
+    }
+
+    return "success";
+}
+
+std::string CommandProcessor::Restart(const std::string &args)
+{
+
+    WSServer::GetInstance().CloseServer();
+    OpenGuard::Utils::Restart();
+
+    /// This should never be reached
+    return "";
 }

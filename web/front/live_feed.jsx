@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useRef } from "react";
-import websocket_handler from "./core/ws_handler";
+import websocket_handler from "./ws_handler";
 
 function LiveFeed()
 {
     const [image, setImage] = useState(null);
     const [roi, setROI] = useState(null);
-    const [isSelecting, setIsSelecting] = useState(false);
-    const [startPoint, setStartPoint] = useState(null);
+    const [is_selecting, setIsSelecting] = useState(false);
+    const [start_point, setStartPoint] = useState(null);
     const canvas_ref = useRef(null);
 
     useEffect(() =>
@@ -111,15 +111,15 @@ function LiveFeed()
     {
         event.preventDefault();
 
-        if (!isSelecting) return;
+        if (!is_selecting) return;
 
         const current = GetEventCoords(event);
-        if (!current || !startPoint) return;
+        if (!current || !start_point) return;
 
-        const width = current.x - startPoint.x;
-        const height = current.y - startPoint.y;
+        const width = current.x - start_point.x;
+        const height = current.y - start_point.y;
 
-        setROI({ x: startPoint.x, y: startPoint.y, width, height });
+        setROI({ x: start_point.x, y: start_point.y, width, height });
     }
 
     function HandleEnd()
@@ -129,6 +129,14 @@ function LiveFeed()
 
         if (roi && Math.abs(roi.width) > 10 && Math.abs(roi.height) > 10)
         {
+            let scale_x = websocket_handler.og_config.frame_width / canvas_ref.current.clientWidth;
+            let scale_y = websocket_handler.og_config.frame_height / canvas_ref.current.clientHeight;
+
+            roi.x = Math.round(roi.x * scale_x);
+            roi.y = Math.round(roi.y * scale_y);
+            roi.width = Math.round(roi.width * scale_x);
+            roi.height = Math.round(roi.height * scale_y);
+
             console.log("📤 Sending ROI to OpenGuard:", roi);
             websocket_handler.SendCommand("roi_select", { roi });
         }
@@ -148,7 +156,7 @@ function LiveFeed()
     function EnableScroll()
     {
         document.body.style.overflow = "";
-        document.body.style.touchAction = ""; // Re-enable touch gestures
+        document.body.style.touchAction = "";
         document.removeEventListener("touchmove", PreventDefault);
     }
 

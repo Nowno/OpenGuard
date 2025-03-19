@@ -8,6 +8,7 @@
 
 int main()
 {
+
     /// Log application start
     Logger::GetInstance().Log("INFO", "Application started.");
 
@@ -41,7 +42,7 @@ int main()
     hook_manager.RegisterHook("on_hook", HookManager::Hook(HookManager::HookType::NATIVE, [](const std::unordered_map<std::string, std::string>& args) -> std::string
     {
         /// This hook may be called on every frame, so we'll ignore it.
-        if (!(args.at("event") == "on_render"))
+        if (!(args.at("event") == "on_render" || args.at("event") == "on_log"))
             Logger::GetInstance().Log("INFO", args.at("event") + " events called.");
 
         return "";
@@ -49,7 +50,6 @@ int main()
 
     /// 3 - Execute on_start hooks
     hook_manager.ExecuteHooks("on_start", {});
-
     /// Start the WebSocket server to communicate with the web panel
     WSServer::GetInstance();
 
@@ -64,6 +64,12 @@ int main()
 
         cap.Update();
         WSServer::GetInstance().Poll();
+
+        //if press a key restart the program //
+        if (cv::waitKey(1) == 27)
+        {
+            Logger::GetInstance().Log("ERROR", "Application stopped.");
+        }
     }
 
     return 0;

@@ -14,6 +14,7 @@ class WebSocketHandler
         this.resume_time = null;
         this.resume_timer = null;
         this.active_viewers = 0;
+        this.config = 0;
     }
 
     StartServer()
@@ -75,23 +76,45 @@ class WebSocketHandler
 
     ProcessClientCommand(ws, data)
     {
-        switch (data.type)
+        if (data.type === "pause_system")
         {
-            case "pause_system":
-                if (data.args === "resume")
-                {
-                    this.HandleResumeMotion();
-                }
-                else if (data.args && data.args.duration)
-                {
-                    this.HandlePauseMotion(data.args.duration);
-                }
-                break;
-            case "snapshot":
-                this.StartLiveFeed();
-                break;
-            default:
-                this.SendToOpenGuard(data);
+            if (data.args === "resume")
+            {
+                this.HandleResumeMotion();
+            }
+            else if (data.args && data.args.duration)
+            {
+                this.HandlePauseMotion(data.args.duration);
+            }
+        }
+        else if (data.type === "snapshot")
+        {
+            this.StartLiveFeed();
+        }
+        else if (data.type === "get_logs")
+        {
+            data = { type: "get_logs", args: {type: "dump"} };
+            this.SendToOpenGuard(data);
+        }
+        else if (data.type === "get_log")
+        {
+            if(data.args && data.args.type === "stream_start")
+            {
+                this.SendToOpenGuard({ type: "get_logs", args: {type: "stream_start"} });
+            }
+            else if(data.args && data.args.type === "stream_stop")
+            {
+                this.SendToOpenGuard({ type: "get_logs", args: {type: "stream_stop"} });
+            }
+        }
+        else if (data.type === "log_stream")
+        {
+            data = { type: "get_logs", args: {type: "stream_start"} };
+            this.SendToOpenGuard(data);
+        }
+        else
+        {
+            this.SendToOpenGuard(data);
         }
     }
 
@@ -102,6 +125,7 @@ class WebSocketHandler
             console.log("🔓 Authentication successful.");
             this.clients.set(ws, { authenticated: true });
             ws.send(JSON.stringify({ type: "login_success" }));
+            ws.send(JSON.stringify({ type: "config", config: this.config }));
         }
         else
         {
@@ -162,6 +186,7 @@ class WebSocketHandler
         {
             console.log("🚫 No viewers, stopping frame requests.");
             this.SendToOpenGuard({ type: "snapshot", args: { status: "stop" } });
+            this.SendToOpenGuard({ type: "get_logs", args: {type: "stream_stop"} });
         }
     }
 
@@ -193,9 +218,35 @@ class WebSocketHandler
         this.openguard_ws.on("message", (message) =>
         {
             const data = JSON.parse(message);
-            if (data.type === "stream")
+            if (data.type === "snapshot_stream")
             {
                 this.BroadcastToClients({ type: "frame", image: data.image });
+            }
+            else if (data.type === "screenshot")
+            {
+
+            }
+            else if (data.type === "log_dump")
+            {
+                this.BroadcastToClients({ type: "log_dump", logs: data.message });
+            }
+            else if (data.type === "log")
+            {
+                this.BroadcastToClients({ type: "log", log: data.message});
+            }
+            else if (data.type === "authenticated")
+            {
+                this.config = data.message
+                this.BroadcastToClients({ type: "openguard_status", status: "Connected" });
+                this.BroadcastToClients({ type: "config", config: this.config });
+            }
+            else if (data.type === "unauthorized")
+            {
+
+            }
+            else if (data.type === "error")
+            {
+                console.error("⚠️ OpenGuard error:", data.message);
             }
         });
 

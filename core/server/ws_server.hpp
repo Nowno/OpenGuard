@@ -17,6 +17,7 @@ class WSServer
 
     void Poll();
     void Send(const std::string& message);
+    void CloseServer();
     bool GetAuthenticated() const { return authenticated; }
 
     private:
@@ -28,7 +29,7 @@ class WSServer
     void OnOpen(websocketpp::connection_hdl hdl);
     void OnClose(websocketpp::connection_hdl hdl);
 
-    websocketpp::server<websocketpp::config::asio> wsServer;
+    websocketpp::server<websocketpp::config::asio> ws_server;
     std::optional<websocketpp::connection_hdl> client;
     bool authenticated = false;
     OpenGuard::Utils::Timer auth_timer;

@@ -60,6 +60,8 @@ class ConfigManager
         }
     }
 
+    nlohmann::json GetFullConfig() const { return config; }
+
     private:
     /// Private constructor for singleton pattern
     ConfigManager();

@@ -5,9 +5,18 @@
 #include <json/json.hpp>
 #include <unordered_map>
 
+#include "../hook_manager/hook_manager.hpp"
+
 class CommandProcessor
 {
     public:
+    ///enum for hook type
+    enum class Hooks
+    {
+        SNAPSHOT,
+        LOG
+    };
+
     static CommandProcessor& GetInstance()
     {
         static CommandProcessor instance;
@@ -15,8 +24,11 @@ class CommandProcessor
     }
 
     std::string Process(const std::string& command);
-    void SetStreaming(bool streaming);
-    bool GetStreaming() const { return streaming; }
+
+    void SetStreaming(const std::string& stream, bool streaming);
+    bool GetStreaming(const std::string& stream);
+
+    HookManager::HookHandle GetHookID(Hooks hook);
 
     private:
     CommandProcessor();
@@ -34,8 +46,13 @@ class CommandProcessor
     std::string PauseSystem(const std::string& args);
     std::string Snapshot(const std::string& args);
     std::string Restart(const std::string& args);
+    std::string GetLogs(const std::string& args);
 
-    bool streaming = false; /// To avoid registering the hook multiple times
+    bool snapshot_streaming = false; /// To avoid registering the hook multiple times
+    bool log_streaming = false;      /// Idem
+
+    HookManager::HookHandle snapshot_hook_id;
+    HookManager::HookHandle log_hook_id;
 
     std::unordered_map<std::string, std::string (CommandProcessor::*)(const std::string&)> command_map;
 };

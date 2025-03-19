@@ -1,0 +1,29 @@
+{
+    "ffmpeg_path": "C:\\Users\\Nono\\Desktop\\Stuff\\Coding\\Libs\\ffmpeg-master-latest-win64-gpl\\bin\\ffmpeg.exe",
+    "frame_width": 640,
+    "frame_height": 480,
+    "frame_rate": 15,
+    "mog2_history": 300,
+    "mog2_sensitivity": 10,
+    "mog2_detect_shadows": "true",
+    "mog2_motion_threshold": 0.25,
+    "yolo_confidence_threshold": 0.35,
+    "yolo_score_threshold": 0.3,
+    "yolo_resolution": 640,
+    "yolo_use_gpu": "false",
+    "yolo_record_worthy": ["person", "car", "pet"],
+    "yolo_object_detection_frequency": 3,
+    "yolo_model_path": "C:\\Users\\Nono\\Desktop\\Stuff\\School\\FP - Surveilance\\OpenGuard\\core\\detection\\yolo\\models\\yolov5n.onnx",
+    "yolo_classes_path": "C:\\Users\\Nono\\Desktop\\Stuff\\School\\FP - Surveilance\\OpenGuard\\core\\detection\\yolo\\models\\coco.names",
+    "pre_record_length": 3,
+    "post_record_length": 3,
+    "python_prefix": "py",
+    "log_path": "default",
+    "server_username": "admin",
+    "server_password": "nimda",
+    "server_port": 9002,
+    "output_path": "./output"
+}
+
+
+
