@@ -64,12 +64,6 @@ int main()
 
         cap.Update();
         WSServer::GetInstance().Poll();
-
-        //if press a key restart the program //
-        if (cv::waitKey(1) == 27)
-        {
-            Logger::GetInstance().Log("ERROR", "Application stopped.");
-        }
     }
 
     return 0;

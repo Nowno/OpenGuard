@@ -99,6 +99,14 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
     else
     {
         motion_state.SetState(false);
+
+        ///Todo test this
+/*        if (object_detected != ObjectDetector::Object::NONE)
+        {
+            /// If an object was detected but no motion, invalidate the persistent overlay
+            overlay_renderer->InvalidatePersistent();
+            object_detected = ObjectDetector::Object::NONE;
+        }*/
     }
 
 

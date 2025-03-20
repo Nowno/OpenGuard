@@ -157,11 +157,23 @@ void Recorder::ConvertToMP4(const std::string& file, ObjectDetector::Object obje
 
     Logger::GetInstance().Log("INFO", "Converting " + file + " to MP4.");
 
-    /// Create the output file name
-    std::string out_file = file.substr(0, file.find_last_of('.')) + ".mp4";
-    std::stringstream command;
+    /// Extract the start time of the recording from the filename
+    std::string time_str = file.substr(7, 19); /// Hardcoded as the filename is always "motion_YYYY-MM-DD HH-MM-SS"
+    time_t start_time = OpenGuard::Utils::TimeStringToUnix(time_str, "%Y-%m-%d %H-%M-%S");
+
+    /// Calculate the duration of the recording
+    time_t duration = difftime(time(0), start_time);
+
+    /// I suppose this is a way to do metadata injection. I think there's a way to do it with ffmpeg too? But for the sake of simplicity, this is fine.
+    std::string object_name = ObjectDetector::GetObjectString(object_detected);
+    if (object_name.empty() || object_name == "none")
+        object_name = "Unknown";
+
+    /// Extract the output file name without the extension, and append our metadata to it
+    std::string out_file = file.substr(0, file.find_last_of('.')) + "_" + std::to_string(duration) + "_" + object_name + ".mp4";
 
     /// And make the command to invoke FFmpeg to convert the video, disabling output.
+    std::stringstream command;
     command << ConfigManager::GetInstance().GetConfig<std::string>("ffmpeg_path") << " -i \"" << file << "\" -vcodec libx264 -crf 23 \"" << out_file << "\" -loglevel error -y >nul 2>&1";
 
     /// Execute the command and capture the return value

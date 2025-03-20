@@ -69,12 +69,11 @@ HookManager::HookHandle HookManager::RegisterHook(const std::string& event, cons
  */
 void HookManager::UnregisterHook(const std::string& event, HookHandle handle)
 {
-    printf("Unregistering hook for event: %s\n", event.c_str());
     std::lock_guard<std::mutex> lock(hook_mutex);
     auto& hook_list = hooks[event];
     hook_list.erase(std::remove_if(hook_list.begin(), hook_list.end(),[&](const Hook& hook) { return hook.id == handle; }),hook_list.end());
 }
-
+//Todo: Thread pool.
 /**
  * @brief Execute hooks for a given event.
  */

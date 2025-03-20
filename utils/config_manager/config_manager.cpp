@@ -63,3 +63,21 @@ void ConfigManager::LoadConfig()
         ResetConfig();
     }
 }
+
+/**
+ * @brief Overwrite the configuration with a new one. Requires restarting the application.
+ */
+void ConfigManager::OverwriteConfig(nlohmann::json new_config)
+{
+    std::ofstream config_file("./config/config.json");
+
+    if (config_file.is_open())
+    {
+        config_file << new_config;
+        config_file.close();
+    }
+    else
+    {
+        Logger::GetInstance().Log("ERROR", "Failed to overwrite config file.");
+    }
+}

@@ -47,6 +47,8 @@ class CommandProcessor
     std::string Snapshot(const std::string& args);
     std::string Restart(const std::string& args);
     std::string GetLogs(const std::string& args);
+    std::string SetConfig(const std::string& args);
+    std::string GetVideos(const std::string& args);
 
     bool snapshot_streaming = false; /// To avoid registering the hook multiple times
     bool log_streaming = false;      /// Idem
@@ -54,6 +56,6 @@ class CommandProcessor
     HookManager::HookHandle snapshot_hook_id;
     HookManager::HookHandle log_hook_id;
 
-    std::unordered_map<std::string, std::string (CommandProcessor::*)(const std::string&)> command_map;
+    std::unordered_map<std::string, std::string(CommandProcessor::*)(const std::string&)> command_map;
 };
 #endif //OPENGUARD_COMMAND_PROCESSOR_HPP

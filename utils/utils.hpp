@@ -114,6 +114,24 @@ namespace OpenGuard::Utils
         return std::string(buffer);
     }
 
+    /**
+     * @brief Converts a time in a given format to unix time.
+     * @param time_string The time string to convert.
+     * @param format The format of the time string.
+     * @return The unix time.
+     */
+    inline time_t TimeStringToUnix(const std::string& time_string, const std::string& format)
+    {
+        std::tm tm = {};
+        std::istringstream ss(format);
+        ss >> std::get_time(&tm, time_string.c_str());
+
+        if (ss.fail())
+            return -1;
+
+        return std::mktime(&tm);
+    }
+
 
     /**
      * @brief Execute a shell command and return the output.
@@ -263,6 +281,14 @@ namespace OpenGuard::Utils
         double Stop(const std::string& name)
         {
             return timers[name].GetDuration();
+        }
+
+        void PrintResults()
+        {
+            for (auto& [name, timer] : timers)
+            {
+                printf("Measurement %s took %f seconds\n", name.c_str(), timer.GetDuration());
+            }
         }
     };
 }

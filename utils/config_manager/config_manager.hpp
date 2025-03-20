@@ -60,7 +60,17 @@ class ConfigManager
         }
     }
 
+    /**
+     * @brief Return the full configuration.
+     * @return The full configuration.
+     */
     nlohmann::json GetFullConfig() const { return config; }
+
+    /**
+     * @brief Overwrite the configuration with a new one. Requires restarting the application.
+     * @param new_config The new configuration.
+     */
+    void OverwriteConfig(nlohmann::json new_config);
 
     private:
     /// Private constructor for singleton pattern

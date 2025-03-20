@@ -1,5 +1,5 @@
 #include <json/json.hpp>
-#include <opencv2/opencv.hpp>
+#include <b64/base64.hpp>
 
 #include "command_processor.hpp"
 #include "../../utils/logger/logger.hpp"
@@ -10,28 +10,33 @@ using json = nlohmann::json;
 
 CommandProcessor::CommandProcessor()
 {
+    /// Map the command type to the corresponding function
     command_map =
     {
         {"auth", &CommandProcessor::Login},
         {"pause_system", &CommandProcessor::PauseSystem},
         {"snapshot", &CommandProcessor::Snapshot},
         {"restart", &CommandProcessor::Restart},
-        {"set_config", &CommandProcessor::Restart},
-        {"get_logs", &CommandProcessor::GetLogs}
+        {"set_config", &CommandProcessor::SetConfig},
+        {"get_logs", &CommandProcessor::GetLogs},
+        {"get_videos", &CommandProcessor::GetVideos},
     };
 
 }
 
 std::string CommandProcessor::Process(const std::string &command)
 {
+    /// Parse the command and check if it is valid
     json parsed_command = ParseCommand(command);
 
     if (parsed_command.empty())
         return "";
 
+    /// Extract the command type and arguments
     std::string command_type = parsed_command["type"].get<std::string>();
     std::string command_args = parsed_command["args"].dump();
 
+    /// Invoke the appropriate command
     return InvokeCommand(command_type, command_args);
 }
 
@@ -147,7 +152,7 @@ std::string CommandProcessor::Snapshot(const std::string &args)
     if (args_json.empty())
         return "failed";
 
-    std::string status = args_json["status"].get<std::string>();
+    auto status = args_json["status"].get<std::string>();
     bool screenshot = status == "screenshot";
 
     if (status == "stop" && snapshot_streaming)
@@ -234,4 +239,107 @@ std::string CommandProcessor::Restart(const std::string &args)
 
     /// This should never be reached
     return "";
+}
+
+std::string CommandProcessor::SetConfig(const std::string &args)
+{
+    json args_json = ValidateArgs(args, {"config"});
+
+    if (args_json.empty())
+        return "failed";
+
+    ConfigManager::GetInstance().OverwriteConfig(args_json["config"]);
+
+    return "success";
+}
+
+std::string CommandProcessor::GetVideos(const std::string &args)
+{
+    json args_json = ValidateArgs(args, {"type"});
+
+    if (args_json.empty())
+        return "failed";
+
+    auto video_type = args_json["type"].get<std::string>();
+
+    if (video_type == "list")
+    {
+        auto video_dir = ConfigManager::GetInstance().GetConfig<std::string>("output_path");
+        std::vector<std::string> videos;
+
+        for (const auto& entry : std::filesystem::directory_iterator(video_dir))
+        {
+            videos.push_back(entry.path().filename().string());
+        }
+
+        json response = {{"type", "video_list"}, {"videos", videos}};
+        WSServer::GetInstance().Send(response.dump());
+    }
+    else if (video_type == "stream")
+    {
+        args_json = ValidateArgs(args, {"video"});
+
+        if (args_json.empty())
+            return "failed";
+
+        auto video = args_json["video"].get<std::string>();
+        auto video_dir = ConfigManager::GetInstance().GetConfig<std::string>("output_path");
+
+        if (std::filesystem::exists(video_dir + "/" + video))
+        {
+            std::thread([video, video_dir]()
+            {
+                std::ifstream video_file(video_dir + "/" + video, std::ios::binary);
+
+                if (!video_file.is_open())
+                    return;
+
+                Logger::GetInstance().Log("INFO", "Streaming video: " + video);
+
+                const size_t buffer_size = 128 * 1024;
+                std::vector<char> buffer(buffer_size);
+
+                while (video_file.read(buffer.data(), buffer.size()) || video_file.gcount())
+                {
+                    auto bytes_read = video_file.gcount();
+                    if (bytes_read > 0)
+                    {
+                        std::string chunk = std::string(buffer.data(), bytes_read);
+                        std::string base64_chunk = base64::to_base64(chunk);
+
+                        json response = {{"type", "video_stream"}, {"args", {{"video", video}, {"data", base64_chunk}}}};
+                        WSServer::GetInstance().Send(response.dump());
+
+                        /// Avoid flooding the client
+                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    }
+                }
+                video_file.close();
+                json response = {{"type", "video_stream"}, {"args", {{"video", video}, {"data", "stop"}}}};
+                WSServer::GetInstance().Send(response.dump());
+                Logger::GetInstance().Log("INFO", "Finished streaming video: " + video);
+            }).detach();
+        }
+        else
+        {
+            return "failed";
+        }
+    }
+    else if (video_type == "delete")
+    {
+        args_json = ValidateArgs(args, {"video"});
+
+        if (args_json.empty())
+            return "failed";
+
+        auto video = args_json["video"].get<std::string>();
+        auto video_dir = ConfigManager::GetInstance().GetConfig<std::string>("output_path");
+
+        if (std::filesystem::exists(video_dir + "/" + video))
+        {
+            std::filesystem::remove(video_dir + "/" + video);
+        }
+    }
+
+    return "success";
 }
