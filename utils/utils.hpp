@@ -123,8 +123,8 @@ namespace OpenGuard::Utils
     inline time_t TimeStringToUnix(const std::string& time_string, const std::string& format)
     {
         std::tm tm = {};
-        std::istringstream ss(format);
-        ss >> std::get_time(&tm, time_string.c_str());
+        std::istringstream ss(time_string);
+        ss >> std::get_time(&tm, format.c_str());
 
         if (ss.fail())
             return -1;

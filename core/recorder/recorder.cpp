@@ -57,8 +57,6 @@ void Recorder::AddFrame(const cv::Mat& frame, bool motion_detected, ObjectDetect
     /// If the object is record-worthy, set the flagged object to the detected object (to be later passed to the converter)
     if (object_detected_flagged)
         flagged_object = object_detected;
-    else
-        flagged_object = ObjectDetector::Object::NONE;
 
     //// If motion is detected and the object is record-worthy, start recording
     if (motion_detected && this->flagged_object != ObjectDetector::Object::NONE)
@@ -158,12 +156,13 @@ void Recorder::ConvertToMP4(const std::string& file, ObjectDetector::Object obje
     Logger::GetInstance().Log("INFO", "Converting " + file + " to MP4.");
 
     /// Extract the start time of the recording from the filename
-    std::string time_str = file.substr(7, 19); /// Hardcoded as the filename is always "motion_YYYY-MM-DD HH-MM-SS"
+    std::string time_str = file.substr(file.find_last_of('_') + 1, 19); /// Extract the time from the filename
     time_t start_time = OpenGuard::Utils::TimeStringToUnix(time_str, "%Y-%m-%d %H-%M-%S");
 
     /// Calculate the duration of the recording
     time_t duration = difftime(time(0), start_time);
 
+    std::cout << "duration: " << duration << std::endl;
     /// I suppose this is a way to do metadata injection. I think there's a way to do it with ffmpeg too? But for the sake of simplicity, this is fine.
     std::string object_name = ObjectDetector::GetObjectString(object_detected);
     if (object_name.empty() || object_name == "none")
