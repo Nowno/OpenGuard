@@ -60,7 +60,7 @@ class Recorder
     int post_record_buffer_size;               /// The size of the buffer to store frames after motion stops
     int pre_record_buffer_size;                /// The size of the buffer to store frames before motion starts
 
-    ObjectDetector::Object flagged_object;     /// The object that triggered the recording
+    ObjectDetector::Object flagged_object = ObjectDetector::Object::NONE; /// The object to flag for conversion
 
     /**
      * @brief Convert the frames to a video.

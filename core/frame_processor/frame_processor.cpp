@@ -89,32 +89,22 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
             if (!recorder->IsRecording())
                 HookManager::GetInstance().ExecuteHooks("on_object", {{"object", ObjectDetector::GetObjectString(object_detected)}});
         }
-        else
-        {
-            /// If no object was detected, invalidate the persistent overlay
-            /// (because we don't render the objects constantly, we use a persistent overlay to avoid flickering)
-            overlay_renderer->InvalidatePersistent();
-        }
     }
     else
     {
         motion_state.SetState(false);
 
-        ///Todo test this
-/*        if (object_detected != ObjectDetector::Object::NONE)
-        {
-            /// If an object was detected but no motion, invalidate the persistent overlay
-            overlay_renderer->InvalidatePersistent();
-            object_detected = ObjectDetector::Object::NONE;
-        }*/
+        /// If there is no motion, invalidate the persistent overlay
+        /// (because we don't render the objects constantly, we use a persistent overlay to avoid flickering)
+        overlay_renderer->InvalidatePersistent();
     }
-
 
     /// Render the overlay, before recording so that the overlay is also recorded
     overlay_renderer->Render(frame, cap.GetFrameSize());
 
     /// Add the frame to the recorder
     recorder->AddFrame(frame, motion_detected, object_detected);
+
 }
 
 
