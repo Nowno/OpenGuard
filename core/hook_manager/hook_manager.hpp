@@ -88,10 +88,21 @@ class HookManager
     std::string GetHookOutput(const std::string& event, const std::string& key);
 
     /**
-     * @brief Clear the output of a hook.
+     * @brief Clear the output of a hook. (maybe unused)
      * @param event The name of the event.
      */
     void ClearEventHooks(const std::string& event);
+
+    /**
+     * @brief Get all the hooks for a given event.
+     */
+    std::vector<Hook> GetHooks(const std::string& event);
+
+    /**
+     * @brief Get events
+     * @return The events
+     */
+    std::vector<std::string> GetEvents();
 
     /**
      * @brief Check if a hook exists.
@@ -140,8 +151,6 @@ class HookManager
      * @return The new output of the hook.
      */
     void AppendOutput(const std::string& event, const std::string& output);
-
-
 };
 
 

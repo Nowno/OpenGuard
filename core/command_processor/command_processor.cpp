@@ -20,6 +20,7 @@ CommandProcessor::CommandProcessor()
         {"set_config", &CommandProcessor::SetConfig},
         {"get_logs", &CommandProcessor::GetLogs},
         {"get_videos", &CommandProcessor::GetVideos},
+        {"get_hooks", &CommandProcessor::GetHooks}
     };
 
 }
@@ -339,6 +340,146 @@ std::string CommandProcessor::GetVideos(const std::string &args)
         {
             std::filesystem::remove(video_dir + "/" + video);
         }
+    }
+
+    return "success";
+}
+
+std::string CommandProcessor::GetHooks(const std::string &args)
+{
+    json args_json = ValidateArgs(args, {"type"});
+
+    if (args_json.empty())
+        return "failed";
+
+    auto request_type = args_json["type"].get<std::string>();
+
+    if (request_type == "list")
+    {
+        auto events = HookManager::GetInstance().GetEvents();
+        std::vector<std::string> hook_files;
+        for (const auto& event : events)
+        {
+            auto hooks = HookManager::GetInstance().GetHooks(event);
+            for (const auto& hook : hooks)
+            {
+                if (hook.type == HookManager::HookType::EXTERNAL)
+                {
+                    hook_files.push_back(hook.script_path);
+                }
+            }
+        }
+
+        json response = {{"type", "get_hooks"}, {"args", {{"type", "list"}, {"hooks", hook_files}}}};
+        WSServer::GetInstance().Send(response.dump());
+    }
+    else if (request_type == "delete")
+    {
+        args_json = ValidateArgs(args, {"hook"});
+
+        if (args_json.empty())
+            return "failed";
+
+        /// Unregister -> Delete
+        auto hook_name = args_json["hook"].get<std::string>();
+
+        /// Get the event name
+        auto event = std::filesystem::path(hook_name).parent_path().filename().string();
+
+        /// Get all hooks for the event and find the one with the matching path
+        auto hooks = HookManager::GetInstance().GetHooks(event);
+
+        for (const auto& _hook : hooks)
+        {
+            if (_hook.script_path == "./hooks/" + hook_name)
+            {
+                HookManager::GetInstance().UnregisterHook(event, _hook.id);
+                break;
+            }
+        }
+
+        std::filesystem::remove("./hooks/" + hook_name);
+    }
+    else if (request_type == "add")
+    {
+        args_json = ValidateArgs(args, {"event", "file_name", "content"});
+
+        if (args_json.empty())
+            return "failed";
+
+        auto event = args_json["event"].get<std::string>();
+        auto file_name = args_json["file_name"].get<std::string>();
+        auto content = args_json["content"].get<std::string>();
+
+        /// Get the hook path
+        auto hook_path = "./hooks/" + event + "/" + file_name;
+
+        /// Write the content to the file
+        std::ofstream hook_file(hook_path);
+        hook_file << content;
+        hook_file.close();
+
+        /// Register the hook
+        HookManager::GetInstance().RegisterHook(event, HookManager::Hook(HookManager::HookType::EXTERNAL, hook_path));
+    }
+    else if (request_type == "save")
+    {
+        args_json = ValidateArgs(args, {"file_name", "content"});
+
+        if (args_json.empty())
+            return "failed";
+
+        auto file_name = args_json["file_name"].get<std::string>();
+        auto event = std::filesystem::path(file_name).parent_path().filename().string();
+        auto content = args_json["content"].get<std::string>();
+
+        /// Get the hook path
+        auto hook_path = "./hooks/" + file_name;
+        /// If the direcrory doesn't exist, create it
+        if (!std::filesystem::exists("./hooks/" + event))
+        {
+            std::filesystem::create_directories("./hooks/" + event);
+        }
+
+        /// Write the content to the file
+        std::ofstream hook_file(hook_path);
+        hook_file << content;
+        hook_file.close();
+
+        /// If the event doesn't have the hook registered, register it
+        auto hooks = HookManager::GetInstance().GetHooks(event);
+        bool found = false;
+        for (const auto& hook : hooks)
+        {
+            if (hook.script_path == hook_path)
+            {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            HookManager::GetInstance().RegisterHook(event, HookManager::Hook(HookManager::HookType::EXTERNAL, hook_path));
+        }
+    }
+    else if (request_type == "get")
+    {
+        args_json = ValidateArgs(args, {"hook"});
+
+        if (args_json.empty())
+            return "failed";
+
+        auto hook = args_json["hook"].get<std::string>();
+
+        std::ifstream hook_file("./hooks/" + hook);
+        std::string content((std::istreambuf_iterator<char>(hook_file)), std::istreambuf_iterator<char>());
+        hook_file.close();
+
+
+
+        json response = {{"type", "get_hooks"}, {"args", {{"type", "content"}, {"content", content}, {"hook", hook}}}};
+        WSServer::GetInstance().Send(response.dump());
     }
 
     return "success";

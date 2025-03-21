@@ -286,6 +286,38 @@ bool HookManager::HasHook(const std::string& event)
  */
 void HookManager::ClearEventHooks(const std::string &event)
 {
+    if (!HasHook(event))
+        return;
+
     std::lock_guard<std::mutex> lock(hook_mutex);
     hooks[event].clear();
+}
+
+/**
+ * @brief Get all the hooks for a given event.
+ */
+std::vector<HookManager::Hook> HookManager::GetHooks(const std::string& event)
+{
+    if (!HasHook(event))
+        return {};
+
+    std::lock_guard<std::mutex> lock(hook_mutex);
+    return hooks[event];
+}
+
+/**
+ * @brief Get all the events.
+ */
+std::vector<std::string> HookManager::GetEvents()
+{
+    std::vector<std::string> events;
+
+    std::lock_guard<std::mutex> lock(hook_mutex);
+
+    for (const auto& [event, _]: hooks)
+    {
+        events.push_back(event);
+    }
+
+    return events;
 }
