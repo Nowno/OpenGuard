@@ -50,6 +50,7 @@ class CommandProcessor
     std::string SetConfig(const std::string& args);
     std::string GetVideos(const std::string& args);
     std::string GetHooks(const std::string& args);
+    std::string ROISelect(const std::string& args);
 
     bool snapshot_streaming = false; /// To avoid registering the hook multiple times
     bool log_streaming = false;      /// Idem

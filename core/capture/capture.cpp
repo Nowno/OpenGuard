@@ -6,18 +6,23 @@
  */
 Capture::Capture(int width, int height, int fps, int device)
 {
-    #if defined(_WIN32)
-        cap.open(device, cv::CAP_DSHOW);
-    #elif defined(__linux__)
-        cap.open(device, cv::CAP_V4L2);
-    #else
-        cap.open(device);
-    #endif
-
-    if (!cap.isOpened())
+    while (!cap.isOpened())
     {
-        Logger::GetInstance().Log("ERROR", "Unable to open capture device.");
-        return;
+        #if defined(_WIN32)
+            cap.open(device, cv::CAP_DSHOW);
+        #elif defined(__linux__)
+            cap.open(device, cv::CAP_V4L2);
+        #else
+            cap.open(device);
+        #endif
+
+        if (!cap.isOpened())
+        {
+            Logger::GetInstance().Log("ERROR", "Unable to open capture device, trying again.");
+            return;
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 
     // Set resolution

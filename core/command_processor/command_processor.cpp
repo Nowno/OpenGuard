@@ -20,7 +20,8 @@ CommandProcessor::CommandProcessor()
         {"set_config", &CommandProcessor::SetConfig},
         {"get_logs", &CommandProcessor::GetLogs},
         {"get_videos", &CommandProcessor::GetVideos},
-        {"get_hooks", &CommandProcessor::GetHooks}
+        {"get_hooks", &CommandProcessor::GetHooks},
+        {"roi_select", &CommandProcessor::ROISelect}
     };
 
 }
@@ -125,23 +126,31 @@ std::string CommandProcessor::Login(const std::string &args)
     if (!args_json.empty() && args_json["username"] == ConfigManager::GetInstance().GetConfig<std::string>("server_username") &&
                               args_json["password"] == ConfigManager::GetInstance().GetConfig<std::string>("server_password"))
     {
+        json response = {{"type", "authenticated"}, {"message", ConfigManager::GetInstance().GetFullConfig()}};
+
+        WSServer::GetInstance().Send(response.dump());
+
+        Logger::GetInstance().Log("INFO", "Client authenticated.");
+
         return "authenticated";
     }
+
+    Logger::GetInstance().Log("ERROR", "Client authentication failed.");
 
     return "failed";
 }
 
 std::string CommandProcessor::PauseSystem(const std::string &args)
 {
-    json args_json = ValidateArgs(args, {"duration"});
+    json args_json = ValidateArgs(args, {"until"});
 
     if (args_json.empty())
         return "failed";
 
-    args_json = args_json["duration"];
-    std::string duration = args_json.is_string() ? args_json.get<std::string>() : std::to_string(args_json.get<int>());
+    int duration = OpenGuard::Utils::SafeCall([&](){ return args_json["until"].get<int>(); });
 
-    //HookManager::GetInstance().AppendOutput("on_motion", "{\"pause_system\": " + duration + "}");
+    /// Bit hacky, ideally we'd like to return this from a hook
+    HookManager::GetInstance().AppendOutput("on_motion","{\"pause_system\": " + std::to_string(duration) + "}");
 
     return "success";
 }
@@ -234,10 +243,12 @@ std::string CommandProcessor::GetLogs(const std::string &args)
 
 std::string CommandProcessor::Restart(const std::string &args)
 {
-
+    /// Close the server
     WSServer::GetInstance().CloseServer();
+    /// Give time for the server to close
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    /// Restart the program
     OpenGuard::Utils::Restart();
-
     /// This should never be reached
     return "";
 }
@@ -249,7 +260,7 @@ std::string CommandProcessor::SetConfig(const std::string &args)
     if (args_json.empty())
         return "failed";
 
-    ConfigManager::GetInstance().OverwriteConfig(args_json["config"]);
+    ConfigManager::GetInstance().OverwriteConfig(args_json["config"].get<std::string>());
 
     return "success";
 }
@@ -476,11 +487,32 @@ std::string CommandProcessor::GetHooks(const std::string &args)
         std::string content((std::istreambuf_iterator<char>(hook_file)), std::istreambuf_iterator<char>());
         hook_file.close();
 
-
-
         json response = {{"type", "get_hooks"}, {"args", {{"type", "content"}, {"content", content}, {"hook", hook}}}};
         WSServer::GetInstance().Send(response.dump());
     }
+
+    return "success";
+}
+
+std::string CommandProcessor::ROISelect(const std::string &args)
+{
+    json args_json = ValidateArgs(args, {"x", "y", "width", "height", "type"});
+
+    if (args_json.empty())
+        return "failed";
+
+    /// Extract the ROI selection and form the hook output
+    int x = args_json["x"].get<int>();
+    int y = args_json["y"].get<int>();
+    int width = args_json["width"].get<int>();
+    int height = args_json["height"].get<int>();
+
+    auto type = args_json["type"].get<std::string>();
+    auto hook_output = type == "set" ? "{\"roi_select\": {\"x\": " + std::to_string(x) + ", \"y\": " + std::to_string(y) + ", \"width\": " + std::to_string(width) + ", \"height\": " + std::to_string(height) + "}}" :
+                                       "{\"roi_select\": {\"reset\": true}}";
+
+    /// Hijack the motion event to communicate the ROI selection
+    HookManager::GetInstance().AppendOutput("on_motion", hook_output);
 
     return "success";
 }
