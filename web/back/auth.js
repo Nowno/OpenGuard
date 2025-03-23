@@ -1,4 +1,4 @@
-import config from "./config_manager.js";
+import {config} from "./core/config_manager.js";
 
 class Auth
 {

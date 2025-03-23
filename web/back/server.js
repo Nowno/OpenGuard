@@ -1,8 +1,12 @@
 import express from "express";
 import cors from "cors";
-import ws_handler from "./ws_handler.js";
-import config from "./config_manager.js";
+import fs from "fs";
+import path from "path";
+
+import ws_handler from "./core/ws_handler.js";
+import {config, video_dir} from "./core/config_manager.js";
 import Auth from "./auth.js";
+import { Log } from "./core/logger.js";
 
 const app = express();
 const port = config.web.port || 3000;
@@ -10,6 +14,10 @@ const port = config.web.port || 3000;
 app.use(cors());
 app.use(express.json());
 
+/// server video directory statically.
+app.use("/videos", express.static(video_dir));
+
+/// Simple login API to authenticate the user.
 app.post("/api/login", (req, res) =>
 {
     try
@@ -24,30 +32,49 @@ app.post("/api/login", (req, res) =>
 
         if (Auth.AuthenticateUser(username, password))
         {
-            console.log(`✅ Login successful for user: ${username}`);
+            Log("🔑", "Auth", `Login successful for user: ${username}`);
             return res.json({ success: true });
         }
 
-        console.warn(`❌ Invalid login attempt for user: ${username}`);
+        Log("🔑", "Auth", `Login failed for user: ${username}`);
+
         return res.status(401).json({ success: false, message: "Invalid credentials" });
 
     }
     catch (error)
     {
-        console.error("❌ Error in login API:", error);
+        Log("❌", "Auth", `API error: ${error}`);
         return res.status(500).json({ success: false, message: "Server error" });
     }
 });
 
-try
+/// Handle the video viewing with requests rather than websocket to allow for scrubbing, besides it's a well implemented standard.
+/// we'll have to check if the user is authenticated here as well, but for now we'll just serve the video.
+app.get("/videos/:filename", (req, res) =>
 {
-    ws_handler.StartServer();
-}
-catch (error)
-{
-    console.error("❌ Failed to start WebSocket server:", error);
-}
+    const filePath = path.join(video_dir, req.params.filename);
 
+    /// Make sure the file exists before serving
+    if (fs.existsSync(filePath))
+    {
+        res.setHeader("Content-Type", "video/mp4");
+
+        /// Curiously enough I had to set these for the video to play on my iPhone.
+        res.setHeader("Accept-Ranges", "bytes");
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        fs.createReadStream(filePath).pipe(res);
+    }
+    else
+    {
+        res.status(404).json({ error: "File not found" });
+    }
+});
+
+
+/// Start the WebSocket server.
+ws_handler.StartServer();
+
+/// Start listening
 app.listen(port, () =>
 {
     console.log(`🚀 Backend HTTP Server running on port ${port}`);
