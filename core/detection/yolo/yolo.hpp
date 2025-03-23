@@ -54,17 +54,27 @@ class YOLODetector : public ObjectDetector
 
     bool draw_bounding_boxes = true;
 
-    int yolo_resolution;
+    int yolo_resolution;        /// Only need one variable as it's a square
     int width;
-    int call_count;
+    int call_count;             /// To keep track of when to skip a frame
 
     std::unique_ptr<WorkerThread<cv::Mat, DetectionResult>> worker_thread; /// Worker thread to run detection on
     Object last_detection = Object::NONE;                                   /// The last detected object
     std::mutex detection_mutex;                                            /// Mutex to protect the detection result
 
 
+    /**
+     * @brief Retrieve inference results from the worker thread.
+     * @param result The detection result.
+     * @return Whether the results were retrieved with succes or not
+     */
     bool RetrieveInferenceResults(DetectionResult& result);
 
+    /**
+     * @brief Run inference on a given frame; This is the function our worker thread will run.
+     * @param frame The input image.
+     * @return The detection result.
+     */
     DetectionResult RunInference(const cv::Mat& frame);
 
     /**

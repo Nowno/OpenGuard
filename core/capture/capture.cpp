@@ -25,18 +25,19 @@ Capture::Capture(int width, int height, int fps, int device)
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 
-    // Set resolution
+    /// Set resolution
     cap.set(cv::CAP_PROP_FRAME_WIDTH, width);
     cap.set(cv::CAP_PROP_FRAME_HEIGHT, height);
 
-    // Attempt to set FPS, some cameras may record at a different rate depending on lighting conditions
+    /// Attempt to set FPS, some cameras may record at a different rate depending on lighting conditions
     cap.set(cv::CAP_PROP_FPS, fps);
 
-    // Adjust brightness, contrast, and gamma to improve image quality in case of low light
+    /// Adjust brightness, contrast, and gamma to improve image quality in case of low light
     cap.set(cv::CAP_PROP_BRIGHTNESS, 150);
     cap.set(cv::CAP_PROP_CONTRAST, 50);
     cap.set(cv::CAP_PROP_GAMMA, 200);//todo make this a config option
 
+    /// Init timers
     this->frame_timer = OpenGuard::Utils::Timer();
     this->fps_timer = OpenGuard::Utils::Timer();
 }
@@ -92,7 +93,7 @@ int Capture::GetFrameTime()
  */
 cv::Size Capture::GetFrameSize()
 {
-    //Only need to get this once since it won't change
+    /// Only need to get this once since it won't change
     static int width = cap.get(cv::CAP_PROP_FRAME_WIDTH);
     static int height = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
 

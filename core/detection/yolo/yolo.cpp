@@ -12,6 +12,7 @@
  *
  */
 
+/// Todo: YoloV8 is a bit more performant, should be easy enough to make the switch.
 
 /**
  * @brief Constructor: Initializes YOLOv5 detector.
@@ -40,12 +41,14 @@ YOLODetector::YOLODetector()
     /// Set preferable backend & target (CPU or CUDA if available)
     setHardwareAcceleration(ConfigManager::GetInstance().GetConfig<bool>("yolo_use_gpu"));
 
+    /// Define our worker thread, which just runs the inference.
     worker_thread = std::make_unique<WorkerThread<cv::Mat, DetectionResult>>
-            ([this](const cv::Mat &frame) -> DetectionResult
-             {
-                 return RunInference(frame);
-             });
+    ([this](const cv::Mat &frame) -> DetectionResult
+    {
+        return RunInference(frame);
+    });
 
+    /// Start the worker thread, which now awaits frames to process.
     worker_thread->Start();
 }
 
@@ -151,6 +154,7 @@ YOLODetector::DetectionResult YOLODetector::PostProcess(const cv::Mat& frame, co
     std::vector<int> class_ids;
     std::vector<float> confidences;
 
+    /// Calculate scaling factor as yolo can run in a different resolution than ours.
     float x_factor = static_cast<float>(frame.cols) / yolo_resolution;
     float y_factor = static_cast<float>(frame.rows) / yolo_resolution;
 
@@ -242,6 +246,9 @@ YOLODetector::DetectionResult YOLODetector::PostProcess(const cv::Mat& frame, co
 }
 
 
+/**
+ * @brief Returns true if the worker thread has a result to retrieve.
+ */
 bool YOLODetector::RetrieveInferenceResults(YOLODetector::DetectionResult &result)
 {
     std::lock_guard<std::mutex> lock(detection_mutex);
@@ -252,6 +259,9 @@ bool YOLODetector::RetrieveInferenceResults(YOLODetector::DetectionResult &resul
     return false;
 }
 
+/**
+ * @brief Runs inference on a given frame.
+ */
 YOLODetector::DetectionResult YOLODetector::RunInference(const cv::Mat &frame)
 {
     /// Preprocess the frame
@@ -284,48 +294,60 @@ YOLODetector::DetectionResult YOLODetector::RunInference(const cv::Mat &frame)
 /**
  * @brief Runs YOLO detection on a given frame.
  */
-
 ObjectDetector::Object YOLODetector::Detect(const cv::Mat &frame)
 {
     static int call_freq = ConfigManager::GetInstance().GetConfig<int>("yolo_object_detection_frequency");
 
+    /// If the frequency is set to 1, run detection on every frame
+    /// Otherwise, run detection every call_freq frames. Return the last detection when we skip a frame.
     if (call_freq > 1 && call_count++ % call_freq != 0)
         return last_detection;
 
     /// If the queue is full, don't add more jobs to avoid delaying the detection too much
     {
         std::lock_guard<std::mutex> lock(detection_mutex);
+
+        /// Todo: Add a config for this
         if (worker_thread->GetQueueSize() > 6)
             return last_detection;
 
         worker_thread->AddJob(frame.clone());
     }
 
-    DetectionResult result; /// Will hold with the inference results
+    /// Will hold the detection result
+    DetectionResult result;
 
+    /// If the worker thread has something for us, get it.
     if (RetrieveInferenceResults(result))
     {
         std::lock_guard<std::mutex> lock(detection_mutex);
 
+        /// Make sure we have a valid class id
         if (!result.class_ids.empty() && result.class_ids[0] < class_names.size())
         {
+            /// Set the last detection to the detected object
             last_detection = ObjectDetector::GetObjectFromString(class_names[result.class_ids[0]]);
 
+            /// Draw bounding boxes if enabled
             if (this->draw_bounding_boxes)
             {
+                /// Invalidate the persistent overlay to avoid drawing the same boxes over and over
                 overlay_renderer->InvalidatePersistent();
                 DrawBoundingBoxes(result);
             }
         }
         else
         {
+            /// Otherwise, we have no detection
             last_detection = ObjectDetector::Object::NONE;
         }
     }
     else
     {
+        /// And again if we have no detection
         last_detection = ObjectDetector::Object::NONE;
     }
 
+    /// Return the last detection
     return last_detection;
 }

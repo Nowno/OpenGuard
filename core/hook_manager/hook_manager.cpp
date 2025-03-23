@@ -138,6 +138,7 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
             }
             else
             {
+                /// [=] Capture all variables by value as opposed to [&] WHIch captures them by reference occasionally leading to undefined behaviour.
                 std::thread([=]()
                 {
                     std::string result = OpenGuard::Utils::ExecuteCommand(command);
@@ -163,7 +164,7 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
  */
 std::string HookManager::GetHookHeader(const std::string& hook_path)
 {
-    /// If the header is already cached, return it
+    /// If the header is already cached, return it. micro optimization to avoid reading the same file multiple times
     if (header_cache.find(hook_path) != header_cache.end())
         return header_cache[hook_path];
 
@@ -227,6 +228,7 @@ std::string HookManager::GetHookOutput(const std::string& event, const std::stri
         return "";
     }
 
+    /// If there is an output, parse it and return the value of the key
     auto output = OpenGuard::Utils::SafeCall([&]() -> std::string
     {
         json json_output = json::parse(it->second);
@@ -244,14 +246,19 @@ std::string HookManager::GetHookOutput(const std::string& event, const std::stri
     return output;
 }
 
+/**
+ * @brief Clear a specific key from the output of a hook. Maybe should namem this better.
+ */
 void HookManager::ClearHookOutput(const std::string& event, const std::string& key)
 {
     std::lock_guard<std::mutex> lock(output_mutex);
 
+    /// If the event does not exist or the output is empty, return
     auto it = hook_outputs.find(event);
     if (it == hook_outputs.end() || it->second.empty())
         return;
 
+    /// Otherwise, safely parse the output and remove the key
     OpenGuard::Utils::SafeCall([&]()
     {
         json data = json::parse(it->second);
@@ -276,12 +283,14 @@ void HookManager::AppendOutput(const std::string& event, const std::string& outp
 
     json data;
 
-    if ( hook_outputs.find(event) == hook_outputs.end() || hook_outputs[event].empty())
+    /// If the event has not had an output yet, or the output is empty, set the output
+    if (hook_outputs.find(event) == hook_outputs.end() || hook_outputs[event].empty())
     {
         hook_outputs[event] = output;
     }
     else
     {
+        /// Otherwise, we need to merge the two outputs
         OpenGuard::Utils::SafeCall([&]()
         {
             data = json::parse(hook_outputs[event]);

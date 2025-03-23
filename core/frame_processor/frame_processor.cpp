@@ -20,6 +20,8 @@ FrameProcessor::FrameProcessor(Capture& cap) : cap(cap)
 FrameProcessor::~FrameProcessor()
 {
     //todo: maybe add some cleanup here
+    /// This is the most important part, because opencv can prevent us from exiting cleanly
+    this->cap.GetCapture().release();
 }
 
 /**
@@ -28,7 +30,7 @@ FrameProcessor::~FrameProcessor()
  */
 void FrameProcessor::SetMotionDetector(std::unique_ptr<MotionDetector> detector)
 {
-    //Dependency injection, we are injecting the overlay renderer into the motion detector
+    /// Dependency injection, we are injecting the overlay renderer into the motion detector
     this->motion_detector = std::move(detector);
     this->motion_detector->setOverlayRenderer(overlay_renderer);
 }
@@ -61,18 +63,25 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
         return;
     }
 
+    /// Check if any hook has requested the system to be paused
     std::string on_motion_output = HookManager::GetInstance().GetHookOutput("on_motion", "pause_system");
 
     if (!on_motion_output.empty())
     {
+        /// If there has been, set the pause system to the requested value
         pause_system = OpenGuard::Utils::SafeCall([on_motion_output](){ return std::stoi(on_motion_output);});
+
+        /// Clear the output, although not necessary, but the output wouldn't get cleared until the next motion event
         HookManager::GetInstance().ClearHookOutput("on_motion", "pause_system");
     }
 
     /// Run motion detection
     bool motion_detected = motion_detector->Detect(frame);
+
+    /// Check if the current time is less than the pause system time
     bool is_paused = time(0) - pause_system < 0;
 
+    /// If we're not paused and we detected motion, proceed
     if (motion_detected && !is_paused)
     {
         /// For visibility, add an indicator of motion
@@ -111,7 +120,6 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
 
     /// Add the frame to the recorder
     recorder->AddFrame(frame, motion_detected, object_detected);
-
 }
 
 
@@ -134,10 +142,12 @@ bool FrameProcessor::RenderFrame(cv::Mat& processed_frame)
     /// To avoid unnecessarily encoding the frame, only do so if there are hooks registered
     if (HookManager::GetInstance().HasHook("on_render"))
     {
+        /// Get the jpg frame, then encode it to base64 for transport
         std::vector<uchar> buffer;
         cv::imencode(".jpg", processed_frame, buffer);
         std::string base64_frame = base64::to_base64(std::string(buffer.begin(), buffer.end()));
 
+        /// Pass the base64 frame to the hooks
         HookManager::GetInstance().ExecuteHooks("on_render", {{"frame", base64_frame}});
     }
 

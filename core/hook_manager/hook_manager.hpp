@@ -23,12 +23,14 @@ class HookManager
         Hook(HookType type, const std::function<std::string(const std::unordered_map<std::string, std::string>& args)>& callback, bool blocking = false, int cooldown = 0, bool one_time = false)
         : type(type), callback(callback), blocking(blocking), cooldown(cooldown), one_time(one_time)
         {
+            /// The unique id of the hook is simply the memory address of itself
             this->id = reinterpret_cast<HookHandle>(this);
         }
 
         Hook(HookType type, const std::string& _script_path, bool blocking = false, int cooldown = 0, bool one_time = false)
         : type(type), script_path(_script_path), blocking(blocking), cooldown(cooldown), one_time(one_time)
         {
+            /// idem
             this->id = reinterpret_cast<HookHandle>(this);
         }
 

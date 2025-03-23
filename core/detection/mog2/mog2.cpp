@@ -28,8 +28,8 @@ MOG2Detector::MOG2Detector()
     mog2->setVarThreshold(ConfigManager::GetInstance().GetConfig<int>("mog2_sensitivity"));    /// Lower threshold = more sensitivity
     mog2->setHistory(ConfigManager::GetInstance().GetConfig<int>("mog2_history"));             /// Number of frames to keep in memory
 
-    this->roi_selection = cv::Rect(0, 0, width, height);
-    this->last_roi_selection = roi_selection;
+    /// ROI, the whole frame by default.
+    this->roi_selection = cv::Rect(0,0, width, height);
 }
 
 
@@ -79,11 +79,13 @@ bool MOG2Detector::Detect(cv::Mat& frame)
 
     std::string on_motion_output = HookManager::GetInstance().GetHookOutput("on_motion", "roi_select");
 
+    /// If there is roi_select output in the on_motion hook, parse it
     if (!on_motion_output.empty())
     {
         /// Parse the ROI selection
         auto roi_select = nlohmann::json::parse(on_motion_output);
 
+        /// If the client requests a reset, reset the ROI selection.
         if (roi_select.contains("reset"))
         {
             this->roi_selection = cv::Rect(0, 0, frame.cols, frame.rows);
@@ -95,20 +97,20 @@ bool MOG2Detector::Detect(cv::Mat& frame)
             int width = roi_select["width"];
             int height = roi_select["height"];
 
+            /// Make sure the ROI selection is within the frame, and apply it
             if (x >= 0 && y >= 0 && width > 0 && height > 0 && x + width <= frame.cols && y + height <= frame.rows)
             {
-                std::cout << "Setting ROI selection" << std::endl;
-                this->last_roi_selection = this->roi_selection;
                 this->roi_selection = cv::Rect(x, y, width, height);
             }
             else
             {
-                Logger::GetInstance().Log("ERROR", "Invalid ROI selection, resetting to full frame.");
-                this->last_roi_selection = this->roi_selection;
+                /// Otherwise reset it.
                 this->roi_selection = cv::Rect(0, 0, frame.cols, frame.rows);
             }
         }
 
+        /// Clear the output for this key as it won't be cleared until the next motion event
+        /// Technically it shouldn't be like that but we are hijacking the on_motion event for this purpose
         HookManager::GetInstance().ClearHookOutput("on_motion", "roi_select");
     }
 

@@ -62,16 +62,18 @@ void Logger::Log(const std::string_view &type, const std::string_view &message, 
     }
 }
 
-
+/// Dump the log buffer to a string.
 std::string Logger::DumpBuffer()
 {
     std::lock_guard<std::mutex> lock(log_mutex);
     std::string buffer;
 
+    /// Concatenate all the logs in the buffer.
     for (const auto& log : log_buffer)
     {
         buffer += log + "\n";
     }
 
+    /// And return it, used in the panel.
     return buffer;
 }

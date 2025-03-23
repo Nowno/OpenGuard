@@ -167,6 +167,7 @@ namespace OpenGuard::Utils
             return_value += buffer.data();
         }
 
+        /// Remove trailing whitespace
         return_value.erase(return_value.find_last_not_of(" \t\n\r\f\v") + 1);
 
         if (return_value.empty())

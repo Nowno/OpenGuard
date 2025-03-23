@@ -26,11 +26,10 @@ class MOG2Detector : public MotionDetector
 
 
     private:
-    //Basically a smart ptr.
+    /// Basically a smart ptr.
     cv::Ptr<cv::BackgroundSubtractorMOG2> mog2;
 
     cv::Rect roi_selection;
-    cv::Rect last_roi_selection;
 
     int motion_threshold;      /// The threshold for motion detection
     int initialization_frames; /// Number of frames to ignore

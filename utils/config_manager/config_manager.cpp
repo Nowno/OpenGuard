@@ -25,6 +25,7 @@ void ConfigManager::ResetConfig()
 {
     Logger::GetInstance().Log("INFO", "Resetting config to default.");
 
+    /// Assume the folder doesn't exist if we reached this point.
     std::filesystem::create_directories("./config");
     std::ofstream config_file("./config/config.json");
 
@@ -77,6 +78,7 @@ void ConfigManager::OverwriteConfig(const std::string& new_config)
 
         if (config_file.is_open())
         {
+            /// Make sure it is still readable.
             config_file << std::setw(4) << new_config_json << std::endl;
             config_file.close();
         }
