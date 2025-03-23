@@ -29,6 +29,9 @@ class MOG2Detector : public MotionDetector
     //Basically a smart ptr.
     cv::Ptr<cv::BackgroundSubtractorMOG2> mog2;
 
+    cv::Rect roi_selection;
+    cv::Rect last_roi_selection;
+
     int motion_threshold;      /// The threshold for motion detection
     int initialization_frames; /// Number of frames to ignore
 
@@ -45,7 +48,7 @@ class MOG2Detector : public MotionDetector
      * @param fgMask The foreground mask.
      * @return A vector of bounding boxes.
      */
-    std::vector<cv::Rect> getMotionBB(const cv::Mat& fgMask);
+    std::vector<cv::Rect> GetMotionBB(const cv::Mat& fgMask);
 };
 
 #endif // OPENGUARD_MOG2_DETECTOR_HPP

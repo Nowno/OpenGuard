@@ -161,6 +161,9 @@ void Recorder::ConvertToMP4(const std::string& file, ObjectDetector::Object obje
     /// Calculate the duration of the recording
     time_t duration = difftime(time(0), start_time);
 
+    /// Account for the pre-record buffer*
+    duration += pre_record_buffer_size / fps;
+
     /// I suppose this is a way to do metadata injection. I think there's a way to do it with ffmpeg too? But for the sake of simplicity, this is fine.
     std::string object_name = ObjectDetector::GetObjectString(object_detected);
     if (object_name.empty() || object_name == "none")

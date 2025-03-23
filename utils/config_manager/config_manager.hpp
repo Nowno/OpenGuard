@@ -70,7 +70,7 @@ class ConfigManager
      * @brief Overwrite the configuration with a new one. Requires restarting the application.
      * @param new_config The new configuration.
      */
-    void OverwriteConfig(nlohmann::json new_config);
+    void OverwriteConfig(const std::string& new_config);
 
     private:
     /// Private constructor for singleton pattern

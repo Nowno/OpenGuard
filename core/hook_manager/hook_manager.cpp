@@ -88,7 +88,7 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
     args["time"] = std::to_string(time(0));
 
     /// Reset the output for the event
-    hook_outputs[event] = "{}";
+    hook_outputs[event] = "";
 
     /// Edge case for on_hook event
     for (const Hook& on_hook : hooks["on_hook"])
@@ -133,19 +133,14 @@ void HookManager::ExecuteHooks(const std::string& event, std::unordered_map<std:
             if (hook.blocking)
             {
                 /// For blocking hooks, execute them synchronously and capture the output
-                auto result = OpenGuard::Utils::ExecuteCommand(command);
-
-                std::lock_guard<std::mutex> lock(output_mutex);
+                std::string result = OpenGuard::Utils::ExecuteCommand(command);
                 AppendOutput(event, result);
             }
             else
             {
-
-                std::thread([&, event, command]()
+                std::thread([=]()
                 {
                     std::string result = OpenGuard::Utils::ExecuteCommand(command);
-
-                    std::lock_guard<std::mutex> lock(output_mutex);
                     AppendOutput(event, result);
                 }).detach();
             }
@@ -223,53 +218,83 @@ int HookManager::GetCooldown(const std::string& hook_path)
  */
 std::string HookManager::GetHookOutput(const std::string& event, const std::string& key)
 {
-
     std::lock_guard<std::mutex> lock(output_mutex);
 
-    if (hook_outputs.find(event) == hook_outputs.end() ||
-        hook_outputs[event].empty()                    ||
-        hook_outputs[event] == "{}"                    ||
-        key.empty())
+    /// Check if the event exists and has non-empty output
+    auto it = hook_outputs.find(event);
+    if (it == hook_outputs.end() || it->second.empty() || key.empty())
     {
         return "";
     }
 
-    /// Return the value of the key in the JSON output
-    std::string ret = OpenGuard::Utils::SafeCall([&](){ return json::parse(hook_outputs[event]).at(key); });
+    auto output = OpenGuard::Utils::SafeCall([&]() -> std::string
+    {
+        json json_output = json::parse(it->second);
 
-    return ret;
+        if (json_output.contains(key))
+        {
+            return json_output[key].dump();
+        }
+        else
+        {
+            return "";
+        }
+    });
+
+    return output;
 }
+
+void HookManager::ClearHookOutput(const std::string& event, const std::string& key)
+{
+    std::lock_guard<std::mutex> lock(output_mutex);
+
+    auto it = hook_outputs.find(event);
+    if (it == hook_outputs.end() || it->second.empty())
+        return;
+
+    OpenGuard::Utils::SafeCall([&]()
+    {
+        json data = json::parse(it->second);
+        if (data.contains(key))
+        {
+            data.erase(key);
+            it->second = data.dump();
+        }
+    });
+}
+
 
 /**
  * @brief Append output to the output of a hook.
  */
 void HookManager::AppendOutput(const std::string& event, const std::string& output)
 {
-    if (hook_outputs.find(event) == hook_outputs.end())
+    if (output == "")
         return;
 
-    if (output.empty())
-        return;
+    std::lock_guard<std::mutex> lock(output_mutex);
 
     json data;
 
-    try
+    if ( hook_outputs.find(event) == hook_outputs.end() || hook_outputs[event].empty())
     {
-        data = json::parse(hook_outputs[event]);
-        json new_data = json::parse(output);
-
-        for (auto &[key, value]: new_data.items())
+        hook_outputs[event] = output;
+    }
+    else
+    {
+        OpenGuard::Utils::SafeCall([&]()
         {
-            data[key] = value;
-        }
-    }
-    catch (const std::exception& e)
-    {
-        Logger::GetInstance().Log("ERROR", "Failed to append output: " + std::string(e.what()));
-        return;
-    }
+            data = json::parse(hook_outputs[event]);
+            json new_data = json::parse(output);
 
-   this->hook_outputs[event] = data.dump();
+            for (auto &[key, value]: new_data.items())
+            {
+                data[key] = value;
+            }
+        });
+
+        hook_outputs[event] = data.dump();
+    }
 }
 
 /**
@@ -277,7 +302,6 @@ void HookManager::AppendOutput(const std::string& event, const std::string& outp
  */
 bool HookManager::HasHook(const std::string& event)
 {
-    std::lock_guard<std::mutex> lock(hook_mutex);
     return hooks.find(event) != hooks.end();
 }
 
@@ -286,10 +310,11 @@ bool HookManager::HasHook(const std::string& event)
  */
 void HookManager::ClearEventHooks(const std::string &event)
 {
+    std::lock_guard<std::mutex> lock(hook_mutex);
+
     if (!HasHook(event))
         return;
 
-    std::lock_guard<std::mutex> lock(hook_mutex);
     hooks[event].clear();
 }
 
@@ -298,10 +323,11 @@ void HookManager::ClearEventHooks(const std::string &event)
  */
 std::vector<HookManager::Hook> HookManager::GetHooks(const std::string& event)
 {
+    std::lock_guard<std::mutex> lock(hook_mutex);
+
     if (!HasHook(event))
         return {};
 
-    std::lock_guard<std::mutex> lock(hook_mutex);
     return hooks[event];
 }
 

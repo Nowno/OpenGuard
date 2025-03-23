@@ -88,6 +88,13 @@ class HookManager
     std::string GetHookOutput(const std::string& event, const std::string& key);
 
     /**
+     * @brief Clear the output of a hook.
+     * @param event The name of the event.
+     * @param key The key of the output.
+     */
+    void ClearHookOutput(const std::string& event, const std::string& key);
+
+    /**
      * @brief Clear the output of a hook. (maybe unused)
      * @param event The name of the event.
      */
@@ -151,6 +158,9 @@ class HookManager
      * @return The new output of the hook.
      */
     void AppendOutput(const std::string& event, const std::string& output);
+
+    /// Make CommandProcessor a friend class to access AppendOutput, as we don't want to expose it to the rest of the code.
+    friend class CommandProcessor;
 };
 
 

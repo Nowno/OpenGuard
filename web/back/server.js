@@ -52,7 +52,7 @@ app.post("/api/login", (req, res) =>
 /// we'll have to check if the user is authenticated here as well, but for now we'll just serve the video.
 app.get("/videos/:filename", (req, res) =>
 {
-    const filePath = path.join(video_dir, req.params.filename);
+    const file_path = path.join(video_dir, req.params.filename);
 
     /// Make sure the file exists before serving
     if (fs.existsSync(filePath))
@@ -62,13 +62,27 @@ app.get("/videos/:filename", (req, res) =>
         /// Curiously enough I had to set these for the video to play on my iPhone.
         res.setHeader("Accept-Ranges", "bytes");
         res.setHeader("Access-Control-Allow-Origin", "*");
-        fs.createReadStream(filePath).pipe(res);
+        fs.createReadStream(file_path).pipe(res);
     }
     else
     {
         res.status(404).json({ error: "File not found" });
     }
 });
+
+/// API to get the list of videos available.
+app.get("/api/videos", (req, res) =>
+{
+    fs.readdir(video_dir, (err, files) =>
+    {
+        if (err)
+            return res.status(500).json({ success: false, message: "Could not retrieve videos" });
+
+        const videoFiles = files.filter(file => file.endsWith(".mp4"));
+        res.json({ success: true, videos: videoFiles });
+    });
+});
+
 
 
 /// Start the WebSocket server.

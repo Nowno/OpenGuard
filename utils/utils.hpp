@@ -7,6 +7,8 @@
 #include <vector>
 #include <ctime>
 #include <filesystem>
+#include <thread>
+#include <future>
 
 namespace OpenGuard::Utils
 {
@@ -181,13 +183,14 @@ namespace OpenGuard::Utils
         std::string executable_path = std::filesystem::current_path().string() + "/OpenGuard";
 
         #ifdef _WIN32
-            std::string command = "cmd /c \"timeout /t 1 & start \"\" \"" + executable_path + ".exe\"\"";
+            std::string command = "cmd /c & start \"\" \"" + executable_path + ".exe\"\"";
         #else
-            std::string command = "sh -c 'sleep 1 && \"" + executable_path + "\"' &";
+            /// I just googled this, needs to be tested
+            std::string command = "sh -c && \"" + executable_path + "\"' &";
         #endif
 
         std::system(command.c_str());
-        std::exit(0);
+        std::quick_exit(0);
     }
 
     /// Try-catch block for safe execution of functions. Avoids repetition.

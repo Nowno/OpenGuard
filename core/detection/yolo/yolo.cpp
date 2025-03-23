@@ -130,10 +130,15 @@ void YOLODetector::DrawBoundingBoxes(const YOLODetector::DetectionResult &result
         int class_id = result.class_ids[i];
         float confidence = result.confidences[i];
 
-        std::string label = class_names[class_id] + " " + std::to_string(confidence);
+        /// Draw bounding box and label, round confidence to nearest integer
+        std::string label = class_names[class_id] + " " + std::to_string(int(confidence * 100)) + "%";
 
-        overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::RECTANGLE, box, cv::Scalar(0, 255, 0), 2, true));
-        overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, label, cv::Point(box.x,box.y - 10), cv::Scalar(0, 255, 0), 2, true, cv::FONT_HERSHEY_SIMPLEX, true));
+        /// Set color based on class, red for "danger" like a person, green for the rest
+        auto color = class_names[class_id] == "person" ? cv::Scalar(0, 0, 255) : cv::Scalar(0, 255, 0);
+
+        /// Add the elements to the overlay
+        overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::RECTANGLE, box, color, 2, true));
+        overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, label, cv::Point(box.x, box.y - 10), color, 0.5, 1, cv::FONT_HERSHEY_SIMPLEX, true));
     }
 }
 

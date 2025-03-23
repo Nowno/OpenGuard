@@ -56,8 +56,7 @@ class WebSocketHandler
         this.ConnectToOpenGuard();
 
         /// This is a bit yucky
-        ApplySchedule(() => GetPauseState(), (duration) => HandlePauseMotion(this, duration), () => HandleResumeMotion(this)
-        );
+        ApplySchedule(() => GetPauseState(), (duration) => HandlePauseMotion(this, duration), () => HandleResumeMotion(this));
 
     }
 
@@ -160,6 +159,11 @@ class WebSocketHandler
                     this.SendToOpenGuard(data);
                     /// So that we know if we should push the video chunks to the buffer
                     this.downloading_video = true;
+                }
+                else if (data.args?.type === "list" || data.args?.type === "delete")
+                {
+                    /// Forward it to Open Guard
+                    this.SendToOpenGuard(data);
                 }
                 break;
 
@@ -288,7 +292,7 @@ class WebSocketHandler
                 {
                     Log("🔁", "INFO", `Re-sending pause to OpenGuard until ${new Date(resume_time).toLocaleString()}`);
 
-                    this.SendToOpenGuard({ type: "pause_system", args: { until: resume_time } });
+                    this.SendToOpenGuard({ type: "pause_system", args: { until: Math.floor(resume_time / 1000) } });
 
                     /// Send a resume command in C++ although it already handles that for itself, guess this is kind of redundant.
                     setTimeout(() => HandleResumeMotion(this), resume_time - now);
@@ -380,6 +384,11 @@ class WebSocketHandler
             this.is_openguard_connected = false;
             this.BroadcastToClients({ type: "openguard_status", status: "Disconnected" });
             setTimeout(() => this.ConnectToOpenGuard(), this.reconnect_interval);
+        });
+
+        this.openguard_ws.on("error", () =>
+        {
+            Log("❌", "ERROR", "OpenGuard connection error.");
         });
     }
 

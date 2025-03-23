@@ -1,11 +1,14 @@
 #include "mog2.hpp"
 #include <opencv2/opencv.hpp>
+#include <json/json.hpp>
+
 #include "../../openguard.hpp"
+#include "../../hook_manager/hook_manager.hpp"
 
 MOG2Detector::MOG2Detector()
 {
     int width = ConfigManager::GetInstance().GetConfig<int>("frame_width");
-    int height = ConfigManager::GetInstance().GetConfig<int>("frame_width");
+    int height = ConfigManager::GetInstance().GetConfig<int>("frame_height");
 
     /// Calculate the motion threshold based on the number of pixels
     this->motion_threshold =  width * height * (ConfigManager::GetInstance().GetConfig<float>("mog2_motion_threshold") / 100.0f);
@@ -24,6 +27,9 @@ MOG2Detector::MOG2Detector()
     /// Sensitivity
     mog2->setVarThreshold(ConfigManager::GetInstance().GetConfig<int>("mog2_sensitivity"));    /// Lower threshold = more sensitivity
     mog2->setHistory(ConfigManager::GetInstance().GetConfig<int>("mog2_history"));             /// Number of frames to keep in memory
+
+    this->roi_selection = cv::Rect(0, 0, width, height);
+    this->last_roi_selection = roi_selection;
 }
 
 
@@ -32,7 +38,7 @@ MOG2Detector::MOG2Detector()
  * @param fgMask The foreground mask.
  * @return A vector of bounding boxes.
  */
-std::vector<cv::Rect> MOG2Detector::getMotionBB(const cv::Mat &fgMask)
+std::vector<cv::Rect> MOG2Detector::GetMotionBB(const cv::Mat &fgMask)
 {
     std::vector<std::vector<cv::Point>> contours;
     std::vector<cv::Rect> bounding_boxes;
@@ -69,10 +75,49 @@ void MOG2Detector::PreProcessFrame(cv::Mat& frame)
 
 bool MOG2Detector::Detect(cv::Mat& frame)
 {
-    cv::Mat fgMask;
+    cv::Mat fg_mask;
+
+    std::string on_motion_output = HookManager::GetInstance().GetHookOutput("on_motion", "roi_select");
+
+    if (!on_motion_output.empty())
+    {
+        /// Parse the ROI selection
+        auto roi_select = nlohmann::json::parse(on_motion_output);
+
+        if (roi_select.contains("reset"))
+        {
+            this->roi_selection = cv::Rect(0, 0, frame.cols, frame.rows);
+        }
+        else
+        {
+            int x = roi_select["x"];
+            int y = roi_select["y"];
+            int width = roi_select["width"];
+            int height = roi_select["height"];
+
+            if (x >= 0 && y >= 0 && width > 0 && height > 0 && x + width <= frame.cols && y + height <= frame.rows)
+            {
+                std::cout << "Setting ROI selection" << std::endl;
+                this->last_roi_selection = this->roi_selection;
+                this->roi_selection = cv::Rect(x, y, width, height);
+            }
+            else
+            {
+                Logger::GetInstance().Log("ERROR", "Invalid ROI selection, resetting to full frame.");
+                this->last_roi_selection = this->roi_selection;
+                this->roi_selection = cv::Rect(0, 0, frame.cols, frame.rows);
+            }
+        }
+
+        HookManager::GetInstance().ClearHookOutput("on_motion", "roi_select");
+    }
+
+    /// Draw the ROI selection
+    overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::RECTANGLE, this->roi_selection, cv::Scalar(255, 25, 25), 4, false));
+
 
     /// Apply mog2 to the frame
-    mog2->apply(frame, fgMask);
+    mog2->apply(frame, fg_mask);
 
     /// Edge case, sudden change in lighting upon initialization can cause false positives
     if (!initialized)
@@ -82,25 +127,30 @@ bool MOG2Detector::Detect(cv::Mat& frame)
         return false;
     }
 
+    cv::Mat fg_mask_roi = fg_mask(this->roi_selection);
+
     /// Preprocess the frame
-    this->PreProcessFrame(fgMask);
+    this->PreProcessFrame(fg_mask_roi);
 
     /// Count the number of non-zero pixels
-    int motion_pixels = cv::countNonZero(fgMask);
+    int motion_pixels = cv::countNonZero(fg_mask_roi);
 
     /// Render bounding boxes if enabled
     if (this->draw_bounding_boxes)
     {
-        auto bounding_boxes = getMotionBB(fgMask);
+        auto bounding_boxes = GetMotionBB(fg_mask);
 
-        for (const auto& box : bounding_boxes)
+        for (auto& box : bounding_boxes)
         {
-            overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::RECTANGLE, box, cv::Scalar(0, 255, 0), 2));
+            box.x += this->roi_selection.x;
+            box.y += this->roi_selection.y;
+
+            overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::RECTANGLE, box, cv::Scalar(0, 135, 135), 2));
         }
     }
 
     #ifdef DEBUG
-        cv::imshow("Foreground Mask", fgMask);
+        cv::imshow("Foreground Mask", fg_mask);
     #endif
 
     /// Return whether the amount of motion exceeds the threshold

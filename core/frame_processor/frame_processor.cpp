@@ -12,6 +12,9 @@ FrameProcessor::FrameProcessor(Capture& cap) : cap(cap)
 {
     this->overlay_renderer = std::make_shared<OverlayRenderer>(cap);
     this->recorder = std::make_unique<Recorder>(cap.GetFrameSize());
+
+    overlay_renderer->SetRenderHUD(ConfigManager::GetInstance().GetConfig<bool>("render_hud"));
+    overlay_renderer->SetRenderDebug(ConfigManager::GetInstance().GetConfig<bool>("render_debug"));
 }
 
 FrameProcessor::~FrameProcessor()
@@ -58,14 +61,17 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
         return;
     }
 
-    if (HookManager::GetInstance().GetHookOutput("on_motion", "pause_system") != "")
+    std::string on_motion_output = HookManager::GetInstance().GetHookOutput("on_motion", "pause_system");
+
+    if (!on_motion_output.empty())
     {
-        pause_system = OpenGuard::Utils::SafeCall([&](){ return std::stoi(HookManager::GetInstance().GetHookOutput("on_motion", "pause_system")); });
+        pause_system = OpenGuard::Utils::SafeCall([on_motion_output](){ return std::stoi(on_motion_output);});
+        HookManager::GetInstance().ClearHookOutput("on_motion", "pause_system");
     }
 
     /// Run motion detection
     bool motion_detected = motion_detector->Detect(frame);
-    bool is_paused = 0 && time(0) - pause_system < 0;
+    bool is_paused = time(0) - pause_system < 0;
 
     if (motion_detected && !is_paused)
     {
@@ -92,11 +98,12 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
     }
     else
     {
-        motion_state.SetState(false);
-
         /// If there is no motion, invalidate the persistent overlay
         /// (because we don't render the objects constantly, we use a persistent overlay to avoid flickering)
-        overlay_renderer->InvalidatePersistent();
+        if (motion_state.GetState())
+            overlay_renderer->InvalidatePersistent();
+
+        motion_state.SetState(false);
     }
 
     /// Render the overlay, before recording so that the overlay is also recorded
@@ -135,7 +142,7 @@ bool FrameProcessor::RenderFrame(cv::Mat& processed_frame)
     }
 
     /// Render the processed frame. This should be commented out for performance.
-    cv::imshow("Frame", processed_frame);
+    //cv::imshow("Frame", processed_frame);
 
     return true;
 }

@@ -91,23 +91,16 @@ void WSServer::OnMessage(websocketpp::connection_hdl hdl, websocketpp::server<we
 
     auto response = CommandProcessor::GetInstance().Process(command);
 
-    printf("response: %s\n", response.c_str());
-
     if (!authenticated)
     {
-        if (response == "authenticated")
+        if (response != "authenticated")
         {
-            Logger::GetInstance().Log("INFO", "Client authenticated.");
-            json response = {{"type", "authenticated"}, {"message", ConfigManager::GetInstance().GetFullConfig()}};
-            Send(response.dump());
-            authenticated = true;
+            ws_server.close(hdl, websocketpp::close::status::policy_violation, "Authentication failed.");
+            client.reset();
         }
         else
         {
-            Logger::GetInstance().Log("ERROR", "Client failed to authenticate.");
-            ws_server.close(hdl, websocketpp::close::status::policy_violation, "Authentication failed.");
-            client.reset();
-            return;
+            authenticated = true;
         }
     }
 }
@@ -129,15 +122,21 @@ void WSServer::Send(const std::string& message)
 
 void WSServer::CloseServer()
 {
-    ws_server.stop_listening();
-
     if (client)
     {
-        ws_server.close(client.value(), websocketpp::close::status::going_away, "Server shutting down.");
+        /// For some reason status::going_away doesn't inform the client in time. Use policy_violation as a workaround.
+        ws_server.close(client.value(), websocketpp::close::status::policy_violation, "Server closing.");
         client.reset();
     }
 
-    ws_server.stop();
+    /// Process pending events, such as the queued frame for the close event.
+    for (int i = 0; i < 20; i++)
+    {
+        ws_server.poll();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    /// Stop listening and close the server to allow for a new instance to be created.
+    ws_server.stop_listening();
+    ws_server.stop();
 }

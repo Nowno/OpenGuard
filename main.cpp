@@ -8,7 +8,6 @@
 
 int main()
 {
-
     /// Log application start
     Logger::GetInstance().Log("INFO", "Application started.");
 
@@ -19,10 +18,10 @@ int main()
 
     /// Set up detectors
     auto motion_detector = std::make_unique<MOG2Detector>();
-    motion_detector->setDrawBoundingBoxes(false);
+    motion_detector->setDrawBoundingBoxes(ConfigManager::GetInstance().GetConfig<bool>("mog2_draw_bb"));
 
     auto object_detector = std::make_unique<YOLODetector>();
-    object_detector->setDrawBoundingBoxes(true);
+    object_detector->setDrawBoundingBoxes(ConfigManager::GetInstance().GetConfig<bool>("yolo_draw_bb"));
 
     /// Create frame processor and assign motion and object detectors
     FrameProcessor fp(cap);
@@ -50,18 +49,22 @@ int main()
 
     /// 3 - Execute on_start hooks
     hook_manager.ExecuteHooks("on_start", {});
+
     /// Start the WebSocket server to communicate with the web panel
     WSServer::GetInstance();
 
     while (true)
     {
+        /// Get the current frame -> Process the frame -> Render the frame
         auto frame = cap.GetFrame();
 
         fp.ProcessFrame(frame);
 
+        /// If cancelation is requested, break the loop
         if (!fp.RenderFrame(frame))
             break;
 
+        /// Update the capture and poll the WebSocket server
         cap.Update();
         WSServer::GetInstance().Poll();
     }

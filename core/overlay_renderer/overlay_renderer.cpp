@@ -85,8 +85,9 @@ void OverlayRenderer::Render(cv::Mat &frame, cv::Size size)
 
     }
 
-    cv::addWeighted(frame, 1.0, persistent_overlay, 0.7, 0, frame); /// Add the persistent overlay to the frame
-    cv::addWeighted(frame, 1.0, draw_overlay, 0.7, 0, frame);       /// Add the draw overlay to the frame
+
+    cv::add(frame, draw_overlay, frame);        /// Add the persistent overlay to the frame
+    cv::add(frame, persistent_overlay, frame);  /// Add the draw overlay to the frame
 
     elements.clear();            /// Clear the elements
     persistent_invalid = false;  /// The persistent overlay is now valid as we've rendered it
