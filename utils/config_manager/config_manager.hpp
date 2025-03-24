@@ -88,26 +88,39 @@ class ConfigManager
     nlohmann::json config;
 
     /// Default preset configuration to write to the file if it doesn't exist
-    const std::string preset_config = R"({
-        "model_path": "./core/detection/yolo/models/yolov5s.onnx",
-        "classes_path": "./core/detection/yolo/models/coco.names",
-        "output_path": "./output",
-        "ffmpeg_path": "ffmpeg",
-        "frame_width": 640,
-        "frame_height": 480,
-        "frame_rate": 15,
-        "motion_threshold": 0.1,
-        "confidence_threshold": 0.35,
-        "score_threshold": 0.3,
-        "nms_threshold": 0.45,
-        "use_gpu": true,
-        "pre_record_length": 2,
-        "post_record_length": 2,
-        "python_prefix": "python",
-        "log_path": "default",
-        "record_worthy": ["person", "car", "pet"],
-        "object_detection_frequency": 3
-    })";
+    const std::string preset_config = "{\n""    \"ffmpeg_path\": \"C:\\\\Users\\\\Nono\\\\Desktop\\\\Stuff\\\\Coding\\\\Libs\\\\ffmpeg-master-latest-win64-gpl\\\\bin\\\\ffmpeg.exe\",\n"
+    "    \"frame_height\": 480,\n"
+    "    \"frame_rate\": 15,\n"
+    "    \"frame_width\": 640,\n"
+    "    \"log_path\": \"./config\",\n"
+    "    \"mog2_detect_shadows\": \"true\",\n"
+    "    \"mog2_history\": 300,\n"
+    "    \"mog2_motion_threshold\": 0.2,\n"
+    "    \"mog2_sensitivity\": 10,\n"
+    "    \"mog2_draw_bb\": \"false\",\n"
+    "    \"output_path\": \"./output\",\n"
+    "    \"post_record_length\": 5,\n"
+    "    \"pre_record_length\": 5,\n"
+    "    \"python_prefix\": \"py\",\n"
+    "    \"server_password\": \"nimda\",\n"
+    "    \"server_port\": 9002,\n"
+    "    \"server_username\": \"admin\",\n"
+    "    \"yolo_classes_path\": \"C:\\\\Users\\\\Nono\\\\Desktop\\\\Stuff\\\\School\\\\FP - Surveilance\\\\OpenGuard\\\\core\\\\detection\\\\yolo\\\\models\\\\coco.names\",\n"
+    "    \"yolo_confidence_threshold\": 0.35,\n"
+    "    \"yolo_model_path\": \"C:\\\\Users\\\\Nono\\\\Desktop\\\\Stuff\\\\School\\\\FP - Surveilance\\\\OpenGuard\\\\core\\\\detection\\\\yolo\\\\models\\\\yolov5n.onnx\",\n"
+    "    \"yolo_object_detection_frequency\": 3,\n"
+    "    \"yolo_record_worthy\": [\n"
+    "        \"person\",\n"
+    "        \"car\",\n"
+    "        \"pet\"\n"
+    "    ],\n"
+    "    \"yolo_resolution\": 640,\n"
+    "    \"yolo_score_threshold\": 0.3,\n"
+    "    \"yolo_use_gpu\": \"false\",\n"
+    "    \"yolo_draw_bb\": \"true\",\n"
+    "    \"render_hud\": \"true\",\n"
+    "    \"render_debug\": \"true\"\n"
+    "}";
 };
 
 

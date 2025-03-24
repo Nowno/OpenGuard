@@ -11,7 +11,7 @@ Logger::Logger()
 {
     auto log_path = ConfigManager::GetInstance().GetConfig<std::string>("log_path");
 
-    log_path = log_path.empty() || log_path == "default" ? "logs.txt" : log_path;
+    log_path = log_path.empty() || log_path == "default" ? "logs.txt" : log_path + "/logs.txt";
 
     this->log_file = std::ofstream(log_path, std::ios::app);
 
@@ -41,9 +41,10 @@ void Logger::Log(const std::string_view &type, const std::string_view &message, 
     if (!save)
         return;
 
+    std::lock_guard<std::mutex> lock(log_mutex);
+
     if (this->log_file.is_open())
     {
-        std::lock_guard<std::mutex> lock(log_mutex);
         this->log_file.write(log_message.c_str(), log_message.size());
         this->log_file.flush(); /// Flush to finalize the write
 

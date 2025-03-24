@@ -3,6 +3,8 @@
 #include <iostream>
 #include <fstream>
 
+/// We use std::cerr instead of the Logger as it may not be initialized yet
+
 /**
  * @brief Initiate the config manager.
  */
@@ -23,9 +25,6 @@ ConfigManager::ConfigManager()
  */
 void ConfigManager::ResetConfig()
 {
-    Logger::GetInstance().Log("INFO", "Resetting config to default.");
-
-    /// Assume the folder doesn't exist if we reached this point.
     std::filesystem::create_directories("./config");
     std::ofstream config_file("./config/config.json");
 
@@ -36,7 +35,7 @@ void ConfigManager::ResetConfig()
     }
     else
     {
-        Logger::GetInstance().Log("ERROR", "Failed to create default config file.");
+        std::cerr << "Failed to create config file." << std::endl;
     }
 }
 
@@ -49,7 +48,7 @@ void ConfigManager::LoadConfig()
 
     if (!config_file.is_open())
     {
-        Logger::GetInstance().Log("ERROR", "Failed to open config file, resetting to default.");
+        std::cerr << "Failed to open config file." << std::endl;
         ResetConfig();
         return;
     }
@@ -60,7 +59,7 @@ void ConfigManager::LoadConfig()
     }
     catch (const nlohmann::json::exception& e)
     {
-        Logger::GetInstance().Log("ERROR", "Error parsing config file: " + std::string(e.what()));
+        std::cerr << "Failed to parse config file: " << e.what() << std::endl;
         ResetConfig();
     }
 }
@@ -78,13 +77,12 @@ void ConfigManager::OverwriteConfig(const std::string& new_config)
 
         if (config_file.is_open())
         {
-            /// Make sure it is still readable.
             config_file << std::setw(4) << new_config_json << std::endl;
             config_file.close();
         }
         else
         {
-            Logger::GetInstance().Log("ERROR", "Failed to overwrite config file.");
+            std::cerr << "Failed to open config file for writing." << std::endl;
         }
     });
 }
