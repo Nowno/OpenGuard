@@ -7,7 +7,7 @@ import ws_handler from "./core/ws_handler.js";
 import {config, video_dir} from "./core/config_manager.js";
 import Auth from "./auth.js";
 import { Log } from "./core/logger.js";
-
+import { PollTelegram } from "./core/telegram_commands.js";
 const app = express();
 const port = config.web.port || 3000;
 
@@ -55,7 +55,7 @@ app.get("/videos/:filename", (req, res) =>
     const file_path = path.join(video_dir, req.params.filename);
 
     /// Make sure the file exists before serving
-    if (fs.existsSync(filePath))
+    if (fs.existsSync(file_path))
     {
         res.setHeader("Content-Type", "video/mp4");
 
@@ -94,3 +94,6 @@ app.listen(port, () =>
     console.log(`🚀 Backend HTTP Server running on port ${port}`);
 
 });
+
+/// Start handling our telegram bot
+PollTelegram();

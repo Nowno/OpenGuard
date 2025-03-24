@@ -6,6 +6,7 @@ import { config, SaveConfig, video_dir } from "./config_manager.js";
 import { GetPauseState, HandlePauseMotion, HandleResumeMotion } from "./pause_manager.js";
 import { LoadSchedule, SaveSchedule, ApplySchedule } from "./scheduler.js";
 import { Log } from "./logger.js";
+import { SendTelegramImage, requested_vids} from "./telegram_commands.js";
 
 /**
     Please don't judge the following code, I focused all my efforts on the C++ side, and I had very little time
@@ -176,6 +177,8 @@ class WebSocketHandler
                     config.ws.password = data.args.config.password;
                     SaveConfig(config);
                 }
+                /// Forward the command to OpenGuard
+                this.SendToOpenGuard(data);
                 break;
 
             case "get_schedule":
@@ -324,7 +327,30 @@ class WebSocketHandler
                     break;
 
                 case "video_list":
+                    if (requested_vids)
+                    {
+                        /// send delete command to C++ backend for each video
+                        let video_list = data.videos;
+                        video_list.forEach(video =>
+                        {
+                            this.SendToOpenGuard({ type: "get_videos", args: { type: "delete", video: video } });
+                        });
+                        requested_vids = false;
+                    }
                     this.BroadcastToClients({ type: "video_list", videos: data.videos });
+                    break;
+
+                case "screenshot":
+                    /// Like video_stream, save the screenshot, but send it to telegram instead.
+                    const screenshot_path = `./videos/screenshot.jpg`;
+                    const screenshot = Buffer.from(data.image, "base64");
+
+                    fs.writeFileSync(screenshot_path, screenshot);
+
+                    console.log("Sending screenshot to telegram");
+
+                    SendTelegramImage(screenshot_path);
+
                     break;
 
                 case "video_stream":
@@ -371,6 +397,23 @@ class WebSocketHandler
                 case "authenticated":
                     /// When we authenticate, the server answers by sending us the latest config, here we update it for ourselves and send it to the clients.
                     this.config = data.message;
+
+                    /// The config should also contain the telegram chat id/token, extract it and save it for the telegram commands.
+                    if (this.config.telegram_bot_token && this.config.telegram_user_id)
+                    {
+                        if (!config.telegram)
+                            config.telegram = {};
+
+                        config.telegram.bot_token = this.config.telegram_bot_token;
+                        config.telegram.chat_id = this.config.telegram_user_id;
+
+                        SaveConfig(config);
+                    }
+                    else
+                    {
+                        Log("⚠️", "WARNING", "Telegram bot token or user id missing in OpenGuard config.");
+                    }
+
                     this.BroadcastToClients({ type: "config", config: this.config });
                     break;
             }

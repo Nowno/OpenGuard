@@ -47,7 +47,7 @@ def install_dependencies():
 
 
 def load_config():
-    default_config = { ... }  # Same as before
+    default_config = { ... }
     config_path = os.path.join(os.path.dirname(__file__), "config", "config.json")
 
     try:
@@ -145,35 +145,26 @@ def send_test_message(bot_token, chat_id, user_name):
 
 
 def inject_telegram_token(file_path, token, user_id):
-    abs_path = os.path.join(os.path.dirname(__file__), file_path)
     try:
-        with open(abs_path, "r", encoding="utf-8") as f:
+        full_path = os.path.join(os.path.dirname(__file__), file_path)
+        with open(full_path, "r", encoding="utf-8") as f:
+
             lines = f.readlines()
 
-        new_lines = []
-        token_written = False
-        id_written = False
+        if len(lines) < 10:
+            return
 
-        for line in lines:
-            if "TELEGRAM_TOKEN" in line:
-                new_lines.append(f'    TELEGRAM_TOKEN = "{token}"  \n')
-                token_written = True
-            elif "TELEGRAM_CHAT_ID" in line:
-                new_lines.append(f'    TELEGRAM_CHAT_ID = "{user_id}" \n')
-                id_written = True
-            else:
-                new_lines.append(line)
+        lines[8] = f'    TELEGRAM_TOKEN = "{token}" \n'
+        lines[9] = f'    TELEGRAM_CHAT_ID = "{user_id}"\n'
 
-        if not token_written or not id_written:
-            raise ValueError("Lines not found")
+        with open(full_path, "w", encoding="utf-8") as f:
+            f.writelines(lines)
 
-        with open(abs_path, "w", encoding="utf-8") as f:
-            f.writelines(new_lines)
-
-        print("✅ Telegram credentials injected into", file_path)
+        print("✅ Telegram credentials injected into OpenGuard PY API.")
 
     except Exception as e:
-        print("failed to inject tlegram credentials:", e)
+        print(f"Failed to inject credentials: {e}")
+
 
 def main():
     print(logo)

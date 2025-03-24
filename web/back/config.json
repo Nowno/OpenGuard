@@ -27,5 +27,9 @@
         "Thursday": [],
         "Friday": [],
         "Saturday": []
+    },
+    "telegram": {
+        "bot_token": "7682432372:AAGUCSnotrt3lZSkdPWzWZ8LiYn-V53x6pY",
+        "chat_id": 1820082220
     }
 }

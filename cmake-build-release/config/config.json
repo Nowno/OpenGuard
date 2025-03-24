@@ -5,19 +5,22 @@
     "frame_width": 640,
     "log_path": "default",
     "mog2_detect_shadows": "true",
+    "mog2_draw_bb": "false",
     "mog2_history": 300,
     "mog2_motion_threshold": 0.2,
     "mog2_sensitivity": 10,
-    "mog2_draw_bb": "false",
     "output_path": "./output",
     "post_record_length": 5,
     "pre_record_length": 5,
     "python_prefix": "py",
+    "render_debug": "true",
+    "render_hud": "true",
     "server_password": "nimda",
     "server_port": 9002,
     "server_username": "admin",
     "yolo_classes_path": "C:\\Users\\Nono\\Desktop\\Stuff\\School\\FP - Surveilance\\OpenGuard\\core\\detection\\yolo\\models\\coco.names",
     "yolo_confidence_threshold": 0.35,
+    "yolo_draw_bb": "true",
     "yolo_model_path": "C:\\Users\\Nono\\Desktop\\Stuff\\School\\FP - Surveilance\\OpenGuard\\core\\detection\\yolo\\models\\yolov5n.onnx",
     "yolo_object_detection_frequency": 3,
     "yolo_record_worthy": [
@@ -26,9 +29,6 @@
         "pet"
     ],
     "yolo_resolution": 640,
-    "yolo_score_threshold": 0.3,
-    "yolo_use_gpu": "false",
-    "yolo_draw_bb": "true",
-    "render_hud": "true",
-    "render_debug": "true"
+    "yolo_score_threshold": 0.29,
+    "yolo_use_gpu": "false"
 }
