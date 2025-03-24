@@ -71,9 +71,12 @@ void ConfigManager::OverwriteConfig(const std::string& new_config)
 {
     OpenGuard::Utils::SafeCall([new_config]
     {
+        printf("Overwriting config with new one: %s\n", new_config.c_str());
         nlohmann::json new_config_json = nlohmann::json::parse(new_config);
+        printf("New config: %s\n", new_config_json.dump().c_str());
 
         std::ofstream config_file("./config/config.json");
+        printf("Config file opened\n");
 
         if (config_file.is_open())
         {

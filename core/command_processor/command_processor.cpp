@@ -222,11 +222,13 @@ std::string CommandProcessor::Snapshot(const std::string &args)
     }, true, 0, screenshot);
 
     /// If we're not already streaming, register the hook
-    if (!snapshot_streaming)
+    if (!snapshot_streaming || status == "screenshot")
     {
         /// Also, if a screenshot is requested, we register the hook as a "one time" hook
         this->snapshot_hook_id = HookManager::GetInstance().RegisterHook("on_render", snapshot_hook);
-        snapshot_streaming = true;
+
+        if (!screenshot)
+            snapshot_streaming = true;
     }
 
     return "success";
@@ -303,8 +305,10 @@ std::string CommandProcessor::SetConfig(const std::string &args)
     if (args_json.empty())
         return "failed";
 
+    std::string config = OpenGuard::Utils::SafeCall([args_json]() { return args_json["config"].dump(); });
+
     /// Overwrite the config file with the one provided by the client
-    ConfigManager::GetInstance().OverwriteConfig(args_json["config"].get<std::string>());
+    ConfigManager::GetInstance().OverwriteConfig(config);
 
     return "success";
 }
