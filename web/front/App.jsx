@@ -59,14 +59,14 @@ function App()
             {
                 /// Make sure to keep the pause status in sync
                 const is_paused = data.isPaused ?? data.is_paused;
-                const resume_time = data.resumeTime ?? data.resume_time;
+                const resume_time = data.resumeTime ?? data.resume_time ?? 0;
 
                 setIsPaused(is_paused);
 
                 if (is_paused && is_paused)
                 {
-                    const timeLeft = Math.max(0, Math.floor((is_paused - Date.now()) / 1000));
-                    setRemainingTime(timeLeft);
+                    const time_left = Math.max(0, Math.floor((resume_time - Date.now()) / 1000));
+                    setRemainingTime(time_left);
                 }
             }
         });
@@ -241,7 +241,7 @@ function App()
                     onClick={() => setShowPauseModal(true)}
                     className="mt-4 px-4 py-2 bg-yellow-500 rounded hover:bg-yellow-600"
                 >
-                    ⏸️ Pause Motion Detection
+                    ⏸️ Pause Motion Detedction
                 </button>
             )}
 

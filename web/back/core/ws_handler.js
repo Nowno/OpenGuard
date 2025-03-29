@@ -342,7 +342,7 @@ class WebSocketHandler
 
                 case "screenshot":
                     /// Like video_stream, save the screenshot, but send it to telegram instead.
-                    const screenshot_path = `./videos/screenshot.jpg`;
+                    const screenshot_path = video_dir + `/screenshot.jpg`;
                     const screenshot = Buffer.from(data.image, "base64");
 
                     fs.writeFileSync(screenshot_path, screenshot);
@@ -359,7 +359,7 @@ class WebSocketHandler
                         /// If the C++ is done streaming, save the video, and broadcast the url to the clients.
                         this.downloading_video = false;
 
-                        const video_path = `./videos/${data.args.video}`;
+                        const video_path = video_dir + `/${data.args.video}`;
                         fs.writeFileSync(video_path, Buffer.concat(this.video_buffer));
 
                         /// Reset the buffer

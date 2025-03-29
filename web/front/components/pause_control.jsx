@@ -32,9 +32,15 @@ function PauseControl({ is_open, onClose, setIsPaused, setRemainingTime })
 
         /// Send the pause command to the backend. Actually because of the way C++ is implemented, we could just send a timestamp.
         /// that's due to a late maybe design change.
+        if (isNaN(duration_in_seconds) || duration_in_seconds <= 0)
+            duration_in_seconds = 0;
+
         websocket_handler.SendCommand("pause_system", {
             args: { duration: duration_in_seconds }
         });
+
+        setIsPaused(true);
+        setRemainingTime(duration_in_seconds);
 
         onClose();
     }

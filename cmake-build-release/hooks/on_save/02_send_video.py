@@ -9,6 +9,6 @@ video_path = open_guard.get_arg("file")
 
 open_guard.send_telegram_video(video_path)
 
-open_guard.add_output("success", "fr")
+open_guard.add_output("success", "true")
 
 open_guard.return_output()

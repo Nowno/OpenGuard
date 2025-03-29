@@ -15,7 +15,7 @@ match detected_object:
     case "person":
         out_message = "👤 Person detected"
     case "car":
-        out_message = "🚗 mag came back home!"
+        out_message = "🚗 Dad came back home!"
         open_guard.add_output("cancel", "true")
     case "pet":
         out_message = "🐾 Looks like Minette is awake!"

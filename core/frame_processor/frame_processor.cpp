@@ -88,10 +88,10 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
         overlay_renderer->Add(OverlayRenderer::OverlayElement(OverlayRenderer::DrawType::TEXT, "Motion", cv::Point(12, 45), cv::Scalar(255, 0, 255), 0.5));
 
         /// To avoid spamming the logs, only log once per motion event
-        if (!motion_state.GetState())
+        if (!prev_motion_state.GetState())
         {
-            motion_state.SetState(true);                               /// Update the state
-            HookManager::GetInstance().ExecuteHooks("on_motion", {});  /// Trigger the motion hooks
+            prev_motion_state.SetState(true);                               /// Update the state
+            HookManager::GetInstance().ExecuteHooks("on_motion", {});       /// Trigger the motion hooks
         }
 
         /// Run object detection
@@ -109,10 +109,10 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
     {
         /// If there is no motion, invalidate the persistent overlay
         /// (because we don't render the objects constantly, we use a persistent overlay to avoid flickering)
-        if (motion_state.GetState())
+        if (prev_motion_state.GetState())
             overlay_renderer->InvalidatePersistent();
 
-        motion_state.SetState(false);
+        prev_motion_state.SetState(false);
     }
 
     /// Render the overlay, before recording so that the overlay is also recorded
@@ -152,7 +152,7 @@ bool FrameProcessor::RenderFrame(cv::Mat& processed_frame)
     }
 
     /// Render the processed frame. This should be commented out for performance.
-    //cv::imshow("Frame", processed_frame);
+    cv::imshow("Frame", processed_frame);
 
     return true;
 }
