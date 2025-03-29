@@ -284,17 +284,24 @@ namespace OpenGuard::Utils
 
         double Stop(const std::string& name)
         {
-            return timers[name].GetDuration();
+            auto ret = timers[name].GetDuration();
+            timers[name].Reset();
+
+            return ret;
         }
 
         void PrintResults()
         {
+            printf("Measurement,Durations\n");
             for (auto& [name, timer] : timers)
             {
-                printf("Measurement %s took %f seconds\n", name.c_str(), timer.GetDuration());
+                printf("%s,%f\n", name.c_str(), timer.GetDuration());
             }
         }
+
     };
+
+    inline Profiler profiler;
 }
 
 using OpenGuard::Utils::Vec2;
