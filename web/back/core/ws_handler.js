@@ -6,7 +6,7 @@ import { config, SaveConfig, video_dir } from "./config_manager.js";
 import { GetPauseState, HandlePauseMotion, HandleResumeMotion } from "./pause_manager.js";
 import { LoadSchedule, SaveSchedule, ApplySchedule } from "./scheduler.js";
 import { Log } from "./logger.js";
-import { SendTelegramImage, requested_vids} from "./telegram_commands.js";
+import { SendTelegramImage, SetRequestedVids, GetRequestedVids} from "./telegram_commands";
 
 /**
     Please don't judge the following code, I focused all my efforts on the C++ side, and I had very little time
@@ -327,7 +327,7 @@ class WebSocketHandler
                     break;
 
                 case "video_list":
-                    if (requested_vids)
+                    if (GetRequestedVids())
                     {
                         /// send delete command to C++ backend for each video
                         let video_list = data.videos;
@@ -335,7 +335,7 @@ class WebSocketHandler
                         {
                             this.SendToOpenGuard({ type: "get_videos", args: { type: "delete", video: video } });
                         });
-                        requested_vids = false;
+                        SetRequestedVids(false);
                     }
                     this.BroadcastToClients({ type: "video_list", videos: data.videos });
                     break;

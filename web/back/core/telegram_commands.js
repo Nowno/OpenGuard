@@ -227,8 +227,18 @@ function SendTelegramImage(image_path)
     });
 }
 
+function SetRequestedVids(val)
+{
+    requested_vids = val;
+}
+
+function GetRequestedVids()
+{
+    return requested_vids;
+}
+
 /// Notify the user that the bot is up and running
 SendTelegramMessage("🤖: Telegram bot up and running.");
 
 
-export { PollTelegram, SendTelegramImage, requested_vids};
+export { PollTelegram, SendTelegramImage, SetRequestedVids, GetRequestedVids };
