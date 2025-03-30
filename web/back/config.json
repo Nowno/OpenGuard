@@ -18,6 +18,10 @@
             {
                 "start": 18,
                 "end": 23
+            },
+            {
+                "start": 23,
+                "end": 24
             }
         ],
         "Monday": [
@@ -31,9 +35,5 @@
         "Thursday": [],
         "Friday": [],
         "Saturday": []
-    },
-    "telegram": {
-        "bot_token": "7682432372:AAGUCSnotrt3lZSkdPWzWZ8LiYn-V53x6pY",
-        "chat_id": 1820082220
     }
 }
