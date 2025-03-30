@@ -6,8 +6,8 @@ import time
 
 class OpenGuard:
     # These two will be written to by the setup script to avoid reading them on every hook call  todo: i pushed this to repo, remember to push without the token and invalid it
-    TELEGRAM_TOKEN = "7593504613:AAFlvC7c_gIBUYlRYPqtD1uQW0V55L77so8"
-    TELEGRAM_CHAT_ID = "318319458"
+    TELEGRAM_TOKEN = None
+    TELEGRAM_CHAT_ID = None
 
     def __init__(self):
         """ Initialize OpenGuard API and parse JSON arguments from C++ """
