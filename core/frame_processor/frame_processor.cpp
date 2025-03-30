@@ -91,7 +91,7 @@ void FrameProcessor::ProcessFrame(cv::Mat& frame)
         if (!prev_motion_state.GetState())
         {
             prev_motion_state.SetState(true);                               /// Update the state
-            HookManager::GetInstance().ExecuteHooks("on_motion", {});       /// Trigger the motion hooks
+            HookManager::GetInstance().ExecuteHooks("on_motion", {});      /// Trigger the motion hooks
         }
 
         /// Run object detection
@@ -152,7 +152,7 @@ bool FrameProcessor::RenderFrame(cv::Mat& processed_frame)
     }
 
     /// Render the processed frame. This should be commented out for performance.
-    cv::imshow("Frame", processed_frame);
+    //cv::imshow("Frame", processed_frame);
 
     return true;
 }

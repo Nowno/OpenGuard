@@ -542,7 +542,7 @@ std::string CommandProcessor::GetHooks(const std::string &args)
 
         for (const auto& hook : hooks)
         {
-            if (hook.script_path == hook_path)
+            if (std::filesystem::path(hook.script_path).lexically_normal() == std::filesystem::path(hook_path).lexically_normal())
             {
                 found = true;
                 break;
