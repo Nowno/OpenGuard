@@ -57,8 +57,16 @@ Todo
 ---
 
 ## Building / Running
+Was built with CMAKE and MSVC. Replace OpenCV path in CMAKE to compile.
+Release is provided with pre-compiled executable.
 
-TODO
+to run website.
+web/front/config: npm install
+web/front/config: npm run dev
+
+web/back: npm install
+web/back: node server
+
 
 ## Credits
 
