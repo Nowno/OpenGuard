@@ -62,11 +62,14 @@ Release is provided with pre-compiled executable.
 
 to run website.
 web/front/config: npm install
+
 web/front/config: npm run dev
 
 web/back: npm install
+
 web/back: node server
 
+py setup.py
 
 ## Credits
 
