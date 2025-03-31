@@ -46,7 +46,7 @@ TODO
 
 ## Limitations & Future Work
 
-- Currently only tested on Windows — Linux support is planned
+- Currently only tested on Windows
 - The web dashboard works but could use some UI cleanup
 - A few more hook examples and tutorials
 
