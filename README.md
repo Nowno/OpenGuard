@@ -36,7 +36,7 @@ Windows support is tested and stable. Linux support is in progress, the code is 
 
 <details>
 <summary><strong>Program structure</strong></summary>
-<img src="https://github.com/Nowno/OpenGuard/blob/master/web/front/config/src/assets/structure.png?raw=true" alt="Program Structure" />
+<img src="https://github.com/Nowno/OpenGuard/blob/master/web/front/config/src/assets/examples/structure.png?raw=true" alt="Program Structure" />
 </details>
 
 ---
