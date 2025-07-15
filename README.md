@@ -23,7 +23,7 @@ Windows support is tested and stable. Linux support is in progress, the code is 
 
 ## Screenshots & Demo
 
-<details>
+
 <summary><strong>Showcase</strong></summary>
 
 - [x] Motion detection with region of interest
@@ -34,23 +34,35 @@ Windows support is tested and stable. Linux support is in progress, the code is 
 - [x] Event-based recording
 - [x] Tested with YOLOv5n
 
-TODO
+<details>
+<summary><strong>Program structure</strong></summary>
+<img src="https://github.com/Nowno/OpenGuard/blob/master/web/front/config/src/assets/structure.png?raw=true" alt="Program Structure" />
 </details>
 
 ---
 
 ## Why?
 
-TODO
+Today's surveillance systems are often cloud-dependent and invasive by offloading footage to third-party servers.
+OpenGuard was built to challenge that model.
+
+- Everything runs locally. 
+- From the C++ core to the Python hook system, every part is designed to be extended.
+- Real-time and efficient.
+
+OpenGuard is designed for users that want total control over their surveillance system.
+
 ---
 
 ## Limitations & Future Work
 
 - Currently only tested on Windows
 - The web dashboard works but could use some UI cleanup
-- A few more hook examples and tutorials
+- The web code is not up to my code quality standards as it had to be rushed due to time constraint. 
+- A few more hook examples and tutorials (i.e. Trigger lights, check network for mac address to disable the system when user is home, etc..).
 
 Todo
+- /!!!\ Encrypt login ws -> OpenGuard.
 - Better UI/UX for the panel
 - Object-specific fine-tuned YOLO models
 
