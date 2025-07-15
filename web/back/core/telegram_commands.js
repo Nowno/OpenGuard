@@ -19,7 +19,7 @@ async function PollTelegram()
     /// by that time hopefully the C++ would have sent the config.
     if (!config.telegram)
     {
-        print("Telegram not configured");
+        Log("⚠️", "Warning", "Telegram bot not configured");
         setTimeout(PollTelegram, 10000);
         return;
     }
@@ -123,7 +123,7 @@ function HandleCommand(cmd, args)
         }
 
         /// if the key exists, allow modification
-        if (ws_handler.config[key] != undefined)
+        if (ws_handler.config[key] !== undefined)
         {
             /// Convert the value to the correct type
             if (typeof ws_handler.config[key] === "number")
@@ -149,7 +149,6 @@ function HandleCommand(cmd, args)
         else
         {
             SendTelegramMessage("🤖: ❌ Invalid key.");
-            return;
         }
     }
     else if (cmd === "getconfig")
@@ -193,6 +192,9 @@ function HandleCommand(cmd, args)
 
 function SendTelegramMessage(text)
 {
+    if (!config.telegram || !config.telegram.chat_id)
+        return;
+
     let chat_id = config.telegram.chat_id;
 
     if (!chat_id)
@@ -210,7 +212,6 @@ function SendTelegramMessage(text)
 
 function SendTelegramImage(image_path)
 {
-    console.log(image_path);
     let chat_id = config.telegram.chat_id;
 
     if (!chat_id)
