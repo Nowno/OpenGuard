@@ -23,7 +23,7 @@ Windows support is tested and stable. Linux support is in progress, the code is 
 
 ## Screenshots & Demo
 
-<details>
+
 <summary><strong>Showcase</strong></summary>
 
 - [x] Motion detection with region of interest
@@ -34,7 +34,9 @@ Windows support is tested and stable. Linux support is in progress, the code is 
 - [x] Event-based recording
 - [x] Tested with YOLOv5n
 
-TODO
+<details>
+<summary><strong>Program structure</strong></summary>
+<img src="https://github.com/Nowno/OpenGuard/blob/master/web/front/config/src/assets/structure.png?raw=true" alt="Program Structure" />
 </details>
 
 ---
@@ -56,6 +58,7 @@ OpenGuard is designed for users that want total control over their surveillance 
 
 - Currently only tested on Windows
 - The web dashboard works but could use some UI cleanup
+- The web code is not up to my code quality standards as it had to be rushed due to time constraint. 
 - A few more hook examples and tutorials (i.e. Trigger lights, check network for mac address to disable the system when user is home, etc..).
 
 Todo
