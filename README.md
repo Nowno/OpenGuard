@@ -41,14 +41,22 @@ TODO
 
 ## Why?
 
-TODO
+Today's surveillance systems are often cloud-dependent and invasive by offloading footage to third-party servers.
+OpenGuard was built to challenge that model.
+
+- Everything runs locally. 
+- From the C++ core to the Python hook system, every part is designed to be extended.
+- Real-time and efficient.
+
+OpenGuard is designed for users that want total control over their surveillance system.
+
 ---
 
 ## Limitations & Future Work
 
 - Currently only tested on Windows
 - The web dashboard works but could use some UI cleanup
-- A few more hook examples and tutorials
+- A few more hook examples and tutorials (i.e. Trigger lights, check network for mac address to disable the system when user is home, etc..).
 
 Todo
 - Better UI/UX for the panel
