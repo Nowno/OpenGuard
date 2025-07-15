@@ -491,6 +491,9 @@ std::string CommandProcessor::GetHooks(const std::string &args)
     }
     else if (request_type == "add")
     {
+        Logger::GetInstance().Log("ERROR", "Temporarily disabled until security is implemented.");
+        return "success";
+
         args_json = ValidateArgs(args, {"event", "file_name", "content"});
 
         if (args_json.empty())
@@ -513,6 +516,9 @@ std::string CommandProcessor::GetHooks(const std::string &args)
     }
     else if (request_type == "save")
     {
+        Logger::GetInstance().Log("ERROR", "Temporarily disabled until security is implemented.");
+        return "success";
+
         args_json = ValidateArgs(args, {"file_name", "content"});
 
         if (args_json.empty())
