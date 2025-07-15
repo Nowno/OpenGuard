@@ -62,6 +62,7 @@ OpenGuard is designed for users that want total control over their surveillance 
 - A few more hook examples and tutorials (i.e. Trigger lights, check network for mac address to disable the system when user is home, etc..).
 
 Todo
+- /!!!\ Encrypt login ws -> OpenGuard.
 - Better UI/UX for the panel
 - Object-specific fine-tuned YOLO models
 
